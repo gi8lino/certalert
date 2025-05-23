@@ -60,6 +60,5 @@ jobs:
             org.opencontainers.image.version=${{ steps.tag.outputs.version }}
           tags: |
             ghcr.io/gi8lino/certalert:${{ steps.tag.outputs.version }}
-            ghcr.io/gi8lino/certalert:latest
     outputs:
       version: ${{ steps.tag.outputs.version }}
