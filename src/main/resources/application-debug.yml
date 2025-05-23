@@ -1,0 +1,142 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: certalert
+  main:
+    banner-mode: off
+  config:
+    activate:
+      on-profile: debug
+
+logging:
+  structured:
+    format:
+  level:
+    ch.tkb.certalert: DEBUG
+    root: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus,health
+      base-path: /
+      path-mapping:
+        prometheus: metrics
+
+certalert:
+  version: 1.0.0
+  check-interval: 2m
+  dashboard:
+    critical-threshold: 3d
+    warning-threshold: 20d
+    date-format: "yyyy-MM-dd HH:mm:ss"
+  certificates:
+    - name: regular
+      type: jks
+      path: ./tests/certs/jks/regular.jks
+      password: password
+    - name: chain
+      type: jks
+      path: ./tests/certs/jks/chain.jks
+      password: password
+    - name: regular
+      type: jks
+      path: ./tests/certs/jks/regular.jks
+      password: password
+    - name: chain
+      type: jks
+      path: ./tests/certs/jks/chain.jks
+      password: password
+    - name: intermediate
+      type: jks
+      path: ./tests/certs/jks/intermediate.jks
+      password: password
+    - name: root
+      type: jks
+      path: ./tests/certs/jks/root.jks
+      password: password
+    - name: expired
+      type: jks
+      path: ./tests/certs/jks/expired.jks
+      password: password
+    - name: expiring-soon
+      type: jks
+      path: ./tests/certs/jks/expiring-soon.jks
+      password: password
+    - name: pkcs12
+      type: jks
+      path: ./tests/certs/jks/pkcs12.p12
+      password: password
+    - name: broken
+      type: jks
+      path: ./tests/certs/jks/broken.jks
+    - name: expired
+      type: jks
+      path: ./tests/certs/jks/expired.jks
+      password: password
+    - name: intermediate
+      type: jks
+      path: ./tests/certs/jks/intermediate.jks
+      password: password
+    - name: root
+      type: jks
+      path: ./tests/certs/jks/root.jks
+      password: password
+    - name: expired
+      type: jks
+      path: ./tests/certs/jks/expired.jks
+      password: password
+    - name: expiring-soon
+      type: jks
+      path: ./tests/certs/jks/expiring-soon.jks
+      password: password
+    - name: pkcs12
+      type: jks
+      path: ./tests/certs/jks/pkcs12.p12
+      password: password
+    - name: broken
+      type: jks
+      path: ./tests/certs/jks/broken.jks
+    - name: invalid
+      type: jks
+      path: ./tests/certs/jks/cert.invalid
+    - name: final
+      type: pkcs12
+      path: ./tests/certs/p12/final.p12
+      password: password
+    - name: without_password
+      type: pkcs12
+      path: ./tests/certs/p12/without_password.p12
+      password:
+    - name: intermediate
+      type: pkcs12
+      path: ./tests/certs/p12/intermediate.p12
+      password: password
+    - name: root
+      type: pkcs12
+      path: ./tests/certs/p12/root.p12
+      password: password
+    - name: with_password
+      type: pkcs12
+      path: ./tests/certs/p12/with_password.p12
+      password: password
+    - name: chain
+      type: pkcs12
+      path: ./tests/certs/p12/chain.p12
+      password: password
+    - name: empty_subject
+      type: pkcs12
+      path: ./tests/certs/p12/empty_subject.p12
+      password: password
+    - name: broken
+      type: pkcs12
+      path: ./tests/certs/p12/broken.p12
+    - name: invalid
+      type: pkcs12
+      path: ./tests/certs/p12/cert.invalid
+    - name: no_extension
+      type: pkcs12
+      path: ./tests/certs/p12/no_extension

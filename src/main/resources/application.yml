@@ -1,0 +1,38 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: certalert
+  main:
+    banner-mode: off
+  config:
+    activate:
+      on-profile: default
+    import:
+      - optional:file:certalert.yaml
+      - optional:file:/config/certalert.yaml
+
+logging:
+  structured:
+    format:
+      console: ecs # ecs = JSON logging (ECS format). Can be disabled via LOGGING_STRUCTURED_FORMAT=
+  level:
+    root: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus,health
+      base-path: /
+      path-mapping:
+        prometheus: metrics
+
+certalert:
+  version: 1.0.0
+  check-interval: 2m
+  dashboard:
+    critical-threshold: 3d
+    warning-threshold: 20d
+    date-format: "yyyy-MM-dd HH:mm:ss"

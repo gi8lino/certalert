@@ -1,0 +1,237 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <title>Certalert</title>
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin-top: 10px;
+        font-family: Arial, sans-serif;
+        font-size: 12px;
+        background: #f8f9fa;
+      }
+
+      body {
+        display: flex;
+        flex-direction: column;
+      }
+
+      main {
+        flex: 1;
+      }
+
+      table {
+        border-collapse: collapse;
+        width: 80%;
+        margin: 0 auto;
+        background: white;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+
+      th,
+      td {
+        padding: 5px;
+        border: 1px solid #ddd;
+        text-align: left;
+      }
+
+      th:first-child,
+      td.status-cell {
+        width: 30px;
+        padding: 0;
+        border-right: none;
+        text-align: center;
+      }
+
+      th:nth-child(2),
+      td:nth-child(2) {
+        border-left: none;
+      }
+
+      th {
+        cursor: pointer;
+        position: sticky;
+        top: 0;
+        background-color: #343a40;
+        color: #fff;
+        z-index: 3;
+      }
+
+      th.asc::after {
+        content: " ▲";
+      }
+
+      th.desc::after {
+        content: " ▼";
+      }
+
+      tr:nth-child(even) {
+        background: #f2f2f2;
+      }
+
+      tr:hover {
+        background-color: #e0e0e0;
+      }
+
+      tr.status-ok {
+        background-color: #d4edda !important;
+      }
+
+      tr.status-warn {
+        background-color: #fff3cd !important;
+      }
+
+      tr.status-crit {
+        background-color: #f8d7da !important;
+      }
+
+      tr.status-error {
+        color: white;
+        background-color: red !important;
+      }
+
+      .certalert-icon {
+        width: 18px;
+        height: auto; /* Preserves aspect ratio */
+        margin: 4px;
+        box-sizing: content-box; /* Prevents padding from shrinking the icon */
+        display: inline-block;
+      }
+
+      .status-cell span.valid {
+        color: #28a745;
+      }
+
+      .status-cell span.invalid {
+        color: #dc3545;
+      }
+
+      .status-cell span.expired {
+        color: #6c757d;
+      }
+
+      /* Dynamic SVG coloring via currentColor */
+      tr.status-ok .status-cell {
+        color: #0b8f42; /* Green */
+      }
+
+      tr.status-warn .status-cell {
+        color: #ffc107; /* Yellow */
+      }
+
+      tr.status-crit .status-cell {
+        color: red; /* Red for expired */
+      }
+
+      tr.status-error .status-cell {
+        color: white; /* White for error */
+      }
+
+      footer {
+        width: 100%;
+        margin: 20px auto 0 auto;
+        text-align: center;
+        font-size: 0.9em;
+        color: #666;
+        padding: 10px 0;
+        background: #f1f1f1;
+        position: sticky;
+        bottom: 0;
+        z-index: 1;
+      }
+    </style>
+  </head>
+
+  <body>
+    <main>
+      <table id="certTable">
+        <thead>
+          <tr>
+            <th></th>
+            <th onclick="sortTable(1)">Certificate Name</th>
+            <th onclick="sortTable(2)">Alias</th>
+            <th onclick="sortTable(3)">Subject</th>
+            <th onclick="sortTable(4)">Not Before</th>
+            <th onclick="sortTable(5)">Expiry Date</th>
+            <th onclick="sortTable(6)">Time Remaining</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:class="${cert.statusClass}" th:each="cert : ${certificates}">
+            <td class="status-cell">
+              <span
+                th:text="${cert.statusFragmentName}"
+                th:replace="~{fragments/icons :: ${cert.statusFragmentName}}"
+              >
+              </span>
+            </td>
+            <td th:text="${cert.name}"></td>
+            <td th:text="${cert.alias}"></td>
+            <td th:text="${cert.subject}"></td>
+            <td th:text="${cert.notBeforeFormatted}"></td>
+            <td th:text="${cert.expiryDateFormatted}"></td>
+            <td th:if="${cert.timeRemaining}" th:text="${cert.timeRemaining}">
+              expired
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </main>
+
+    <footer>
+      Version <span th:text="${appVersion}"></span> | Last update:
+      <span th:text="${lastUpdate}"></span> | Interval:
+      <span th:text="${checkInterval}"></span>
+    </footer>
+
+    <script>
+      let currentSortColumn = 1;
+      let currentSortDir = "asc";
+
+      function sortTable(columnIndex) {
+        const table = document.getElementById("certTable");
+        const rows = Array.from(table.tBodies[0].rows);
+        const headers = table.tHead.rows[0].cells;
+
+        // Clear sorting indicators
+        for (const th of headers) {
+          th.classList.remove("asc", "desc");
+        }
+
+        const dir =
+          currentSortColumn === columnIndex && currentSortDir === "asc"
+            ? "desc"
+            : "asc";
+        currentSortColumn = columnIndex;
+        currentSortDir = dir;
+        headers[columnIndex].classList.add(dir);
+
+        const getCellValue = (row) => {
+          const content = row.cells[columnIndex].innerText.trim();
+          const date = Date.parse(content);
+          if (!isNaN(date)) return date;
+          const num = parseFloat(content);
+          if (!isNaN(num)) return num;
+          return content.toLowerCase();
+        };
+
+        rows.sort((a, b) => {
+          const valA = getCellValue(a);
+          const valB = getCellValue(b);
+          return (
+            (valA > valB ? 1 : valA < valB ? -1 : 0) * (dir === "asc" ? 1 : -1)
+          );
+        });
+
+        for (const row of rows) {
+          table.tBodies[0].appendChild(row);
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        sortTable(1); // Default sort by name
+      });
+    </script>
+  </body>
+</html>

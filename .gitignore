@@ -1,0 +1,10 @@
+.classpath
+.factorypath
+.gradle/*
+.idea/*
+.project
+.settings/*
+bin/*
+build/*
+target/*
+settings.gradle

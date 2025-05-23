@@ -1,0 +1,125 @@
+/**
+ * Build script for the CertAlert application.
+ *
+ * This script sets up a Spring Boot project using Gradle.
+ * It fetches all dependencies from public repositories (Maven Central and Gradle Plugin Portal).
+ */
+
+buildscript {
+    repositories {
+        // Use public repositories for plugins and dependencies
+        mavenCentral()
+        gradlePluginPortal()
+    }
+
+    dependencies {
+        // Spring Boot Gradle plugin for building and running the app
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:3.5.0")
+    }
+}
+
+// Apply necessary Gradle plugins
+apply plugin: 'java'                              // Java support
+apply plugin: 'idea'                              // IntelliJ IDEA support
+apply plugin: 'war'                               // WAR packaging (optional, can be disabled)
+apply plugin: 'org.springframework.boot'          // Spring Boot plugin
+apply plugin: 'io.spring.dependency-management'   // Dependency management for Spring Boot
+
+// Define repositories for resolving dependencies
+repositories {
+    mavenCentral()           // Main public repository
+    gradlePluginPortal()     // For Gradle plugins if needed
+}
+
+// Set the group ID for the project
+group = 'ch.tkb.certalert'
+
+// Define project dependencies
+dependencies {
+    // Core Spring Boot dependencies
+    implementation 'org.springframework.boot:spring-boot-starter:3.5.0'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator:3.4.6'
+    implementation 'org.springframework.boot:spring-boot-starter-web:3.5.0'
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf:3.5.0'
+    implementation 'org.springframework.boot:spring-boot-starter-validation:3.5.0'
+
+    // Lombok for annotation processing
+    compileOnly 'org.projectlombok:lombok:1.18.38'
+    annotationProcessor 'org.projectlombok:lombok:1.18.38'
+
+    // Monitoring: Prometheus integration via Micrometer
+    implementation 'io.micrometer:micrometer-registry-prometheus:1.15.0'
+
+    // Utility library: Guava
+    implementation 'com.google.guava:guava:33.4.8-jre'
+
+    // Jackson for JSON (already included via Spring Boot but safe to be explicit)
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.19.0'
+
+    // Jackson for YAML
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.19.0'
+
+    // INI support
+    implementation 'org.ini4j:ini4j:0.5.4'
+
+    // TOML support
+    implementation 'org.tomlj:tomlj:1.1.1'
+
+    // Compile-time annotation processor for configuration metadata
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor:3.5.0'
+
+    // Use JUnit BOM to align all versions
+    testImplementation platform('org.junit:junit-bom:5.12.2')
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api'
+    testImplementation 'org.junit.jupiter:junit-jupiter-params'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+
+    compileOnly 'org.projectlombok:lombok:1.18.38'
+    annotationProcessor 'org.projectlombok:lombok:1.18.38'
+}
+
+// Register a custom task to clean the build directory
+tasks.register('cleanBuild', Delete) {
+    delete 'build'
+}
+
+// Configure packaging: build a fat JAR (not a WAR)
+bootWar.enabled = false       // Disable WAR output
+bootJar.enabled = true        // Enable Spring Boot executable JAR
+jar.enabled = true            // Enable plain JAR if needed
+war.enabled = false           // Fully disable WAR
+
+// Customize the bootJar task to include custom resources
+bootJar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    // Ensure resources from src/main/resources are added properly
+    from('src/main/resources') {
+        into('BOOT-INF/classes')
+    }
+}
+
+// Configure testing to use JUnit Platform (JUnit 5)
+test {
+    useJUnitPlatform()
+}
+
+tasks.register('bootRunDebug', org.springframework.boot.gradle.tasks.run.BootRun) {
+    group = 'application'
+    description = 'Run the application with logging.structured.format effectively removed (system property override).'
+
+    mainClass.set('ch.tkb.certalert.CertalertApplication')
+
+    // Make sure it uses the main sourceSet (safe default)
+    classpath = sourceSets.main.runtimeClasspath
+
+    args '--spring.profiles.active=debug'
+
+    // jvmArgs = [
+    //     '-Dspring.config.location=classpath:/application-debug.yml'
+    // ]
+
+    dependsOn 'classes'  // ensure compilation runs first
+}
+
