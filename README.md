@@ -1,5 +1,13 @@
 # CertAlert
 
+[![Release](https://img.shields.io/github/release/gi8lino/certalert.svg?style=flat-square)](https://github.com/gi8lino/certalert/releases/latest)
+[![GitHub tag](https://img.shields.io/github/tag/gi8lino/certalert.svg?style=flat-square)](https://github.com/gi8lino/certalert/releases/latest)
+![Tests](https://github.com/gi8lino/certalert/actions/workflows/tests.yml/badge.svg)
+[![Build](https://github.com/gi8lino/certalert/actions/workflows/release.yml/badge.svg)](https://github.com/gi8lino/certalert/actions/workflows/release.yml)
+[![license](https://img.shields.io/github/license/gi8lino/certalert.svg?style=flat-square)](LICENSE)
+
+---
+
 CertAlert is a Spring Boot application designed to solve the common problem of unnoticed SSL/TLS certificate expirations
 and misconfigurations. It periodically scans configured certificates, classifies their status, and makes both a
 human-friendly dashboard and Prometheus metrics available.
