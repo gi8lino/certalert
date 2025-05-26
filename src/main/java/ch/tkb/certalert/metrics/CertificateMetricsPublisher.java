@@ -8,6 +8,8 @@ import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
 
 /**
@@ -44,19 +46,17 @@ public class CertificateMetricsPublisher {
     String aliasKey = certInfo.getName() + "|" + certInfo.getAlias();
 
     certExpirationMetrics.computeIfAbsent(aliasKey, key -> {
-        AtomicDouble holder = new AtomicDouble(epochSeconds);
-        Gauge.builder("certalert_certificate_expiration_seconds", holder, AtomicDouble::get)
-            .description("Certificate expiration time in epoch seconds")
-            .tags(
-                "certificate_name", certInfo.getName(),
-                "alias", certInfo.getAlias(),
-                "issuer", certInfo.getIssuerName(),
-            )
-            .register(meterRegistry);
-        return holder;
+      AtomicDouble holder = new AtomicDouble(epochSeconds);
+      Gauge.builder("certalert_certificate_expiration_seconds", holder, AtomicDouble::get)
+          .description("Certificate expiration time in epoch seconds")
+          .tags(
+              "certificate_name", certInfo.getName(),
+              "alias", certInfo.getAlias(),
+              "issuer", certInfo.getIssuerName())
+          .register(meterRegistry);
+      return holder;
     }).set(epochSeconds);
-}
-
+  }
 
   /**
    * Publishes or updates the validity metric for a given certificate.
@@ -71,8 +71,7 @@ public class CertificateMetricsPublisher {
           .description("Indicates if a certificate is valid (0 = valid, 1 = invalid)")
           .tags(
               "certificate_name", certName,
-              "alias", alias
-          )
+              "alias", alias)
           .register(meterRegistry);
       return holder;
     }).set(status);
