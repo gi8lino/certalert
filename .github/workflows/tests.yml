@@ -34,5 +34,5 @@ jobs:
             ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
 
-      - name: Build application JAR
-        run: ./gradlew bootRunDebug
+      - name: Run unit tests
+        run: ./gradlew test
