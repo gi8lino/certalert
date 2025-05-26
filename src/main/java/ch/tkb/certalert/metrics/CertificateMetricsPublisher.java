@@ -51,8 +51,7 @@ public class CertificateMetricsPublisher {
           .description("Certificate expiration time in epoch seconds")
           .tags(
               "certificate_name", certInfo.getName(),
-              "alias", certInfo.getAlias(),
-              "issuer", certInfo.getIssuerName())
+              "alias", certInfo.getAlias())
           .register(meterRegistry);
       return holder;
     }).set(epochSeconds);
