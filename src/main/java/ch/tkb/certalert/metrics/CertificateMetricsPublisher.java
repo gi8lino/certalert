@@ -45,7 +45,7 @@ public class CertificateMetricsPublisher {
 
     certExpirationMetrics.computeIfAbsent(aliasKey, k -> {
       AtomicDouble holder = new AtomicDouble(epochSeconds);
-      Gauge.builder("certificate_expiration_seconds", holder, AtomicDouble::get)
+      Gauge.builder("certalert_certificate_expiration_seconds", holder, AtomicDouble::get)
           .description("Certificate expiration time in epoch seconds")
           .tags("certificate_name", certInfo.getName(), "alias", certInfo.getAlias())
           .register(meterRegistry);
@@ -62,7 +62,7 @@ public class CertificateMetricsPublisher {
 
     certValidityMetrics.computeIfAbsent(aliasKey, k -> {
       AtomicDouble holder = new AtomicDouble(value);
-      Gauge.builder("certificate_validity", holder, AtomicDouble::get)
+      Gauge.builder("certalert_certificate_validity", holder, AtomicDouble::get)
           .description("Indicates if a certificate is valid (0 = valid, 1 = invalid)")
           .tags("certificate_name", certName, "alias", alias)
           .register(meterRegistry);
