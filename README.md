@@ -95,13 +95,13 @@ scan completes.
 
 ### Available Metrics
 
-1. **`certificate_expiration_seconds`**
+1. **`certalert_certificate_expiration_seconds`**
 
    - **Type:** Gauge
    - **Description:** Unix epoch timestamp (seconds) when the certificate expires (`Not After`).
    - **Labels:** `certificate_name`, `alias`
 
-2. **`certificate_validity`**
+2. **`certalert_certificate_validity`**
    - **Type:** Gauge
    - **Description:** Certificate validity state (0 = valid, 1 = invalid or expired).
    - **Labels:** `certificate_name`, `alias`
