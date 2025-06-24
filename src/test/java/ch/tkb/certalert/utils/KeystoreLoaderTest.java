@@ -5,9 +5,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.FileOutputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStore;
-import java.nio.file.Files;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -19,28 +19,42 @@ class KeystoreLoaderTest {
   private static final String PASSWORD = "testpass";
 
   @Test
-  @DisplayName("KeystoreLoader.load loads valid JKS keystore")
-  void testLoadValidJKS() throws Exception {
+  @DisplayName("KeystoreLoader.load loads valid JKS keystore using lowercase alias")
+  void testLoadValidJksWithAlias() throws Exception {
     Path file = tempDir.resolve("test.jks");
 
-    // Create and store a simple keystore
     KeyStore ks = KeyStore.getInstance("JKS");
-    ks.load(null, null); // initialize empty
+    ks.load(null, null);
     try (FileOutputStream fos = new FileOutputStream(file.toFile())) {
       ks.store(fos, PASSWORD.toCharArray());
     }
 
-    // Load it back
-    KeyStore loaded = KeystoreLoader.load("JKS", file.toString(), PASSWORD);
+    KeyStore loaded = KeystoreLoader.load("jks", file.toString(), PASSWORD); // lowercase alias
     assertNotNull(loaded);
     assertEquals("JKS", loaded.getType());
+  }
+
+  @Test
+  @DisplayName("KeystoreLoader.load supports p12 alias for PKCS12")
+  void testLoadP12Alias() throws Exception {
+    Path file = tempDir.resolve("test.p12");
+
+    KeyStore ks = KeyStore.getInstance("PKCS12");
+    ks.load(null, null);
+    try (FileOutputStream fos = new FileOutputStream(file.toFile())) {
+      ks.store(fos, PASSWORD.toCharArray());
+    }
+
+    KeyStore loaded = KeystoreLoader.load("p12", file.toString(), PASSWORD);
+    assertNotNull(loaded);
+    assertEquals("PKCS12", loaded.getType());
   }
 
   @Test
   @DisplayName("KeystoreLoader.load throws if file doesn't exist")
   void testFileNotFound() {
     String nonexistent = tempDir.resolve("missing.jks").toString();
-    Exception ex = assertThrows(Exception.class, () -> KeystoreLoader.load("JKS", nonexistent, PASSWORD));
+    Exception ex = assertThrows(Exception.class, () -> KeystoreLoader.load("jks", nonexistent, PASSWORD));
     assertTrue(ex instanceof java.io.FileNotFoundException);
   }
 
@@ -51,7 +65,7 @@ class KeystoreLoaderTest {
     Files.writeString(file, "not-a-keystore");
 
     Exception ex = assertThrows(IllegalArgumentException.class,
-        () -> KeystoreLoader.load("FAKE", file.toString(), "irrelevant"));
+        () -> KeystoreLoader.load("fake", file.toString(), "irrelevant"));
     assertTrue(ex.getMessage().contains("Unsupported keystore type"));
   }
 
@@ -60,15 +74,14 @@ class KeystoreLoaderTest {
   void testWrongPassword() throws Exception {
     Path file = tempDir.resolve("secure.jks");
 
-    // Create keystore with password
     KeyStore ks = KeyStore.getInstance("JKS");
     ks.load(null, null);
     try (FileOutputStream fos = new FileOutputStream(file.toFile())) {
       ks.store(fos, PASSWORD.toCharArray());
     }
 
-    Exception ex = assertThrows(Exception.class, () -> KeystoreLoader.load("JKS", file.toString(), "wrongpass"));
-    assertTrue(ex.getMessage().contains("password") || ex instanceof java.io.IOException);
+    Exception ex = assertThrows(Exception.class, () -> KeystoreLoader.load("jks", file.toString(), "wrongpass"));
+    assertTrue(ex.getMessage().toLowerCase().contains("password") || ex instanceof java.io.IOException);
   }
 
   @Test
@@ -76,15 +89,13 @@ class KeystoreLoaderTest {
   void testEmptyPasswordForUnprotectedKeystore() throws Exception {
     Path file = tempDir.resolve("emptypass.jks");
 
-    // Create keystore with empty password
     KeyStore ks = KeyStore.getInstance("JKS");
     ks.load(null, null);
     try (FileOutputStream fos = new FileOutputStream(file.toFile())) {
       ks.store(fos, "".toCharArray());
     }
 
-    KeyStore loaded = KeystoreLoader.load("JKS", file.toString(), "");
+    KeyStore loaded = KeystoreLoader.load("jks", file.toString(), "");
     assertNotNull(loaded);
   }
-
 }

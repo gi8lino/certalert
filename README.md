@@ -8,22 +8,47 @@
 
 ---
 
-CertAlert is a Spring Boot application designed to solve the common problem of unnoticed SSL/TLS certificate expirations
-and misconfigurations. It periodically scans configured certificates, classifies their status, and makes both a
-human-friendly dashboard and Prometheus metrics available.
+**CertAlert** is a Spring Boot application that solves the all-too-common problem of unnoticed SSL/TLS certificate expirations and misconfigurations. It periodically scans your configured certificates, classifies their status, and makes both a human-friendly dashboard and Prometheus metrics available.
 
-## Features
+## ✨ Features
 
 - Periodic certificate scanning for expiration and validity
 - Dashboard view showing:
-  - Not Before / Not After dates
-  - Time until expiration (or expired)
-  - Status classification (`VALID` / `INVALID` / `EXPIRED`)
+
+  - `Not Before` / `Not After` dates
+  - Time until expiration (or since expiration)
+  - Status classification (`VALID`, `INVALID`, `EXPIRED`)
+
 - Configurable polling interval
 - Prometheus metrics for expiration timestamps and validity state
-- Flexible password resolution (literal, environment, file)
+- Flexible password resolution (literal, env, file, and more)
 
-## Installation and Usage
+### Supported Certificate Types
+
+CertAlert supports a variety of common certificate formats, including both keystore-based and plain certificate files:
+
+#### Keystore Formats
+
+These are loaded using Java's `KeyStore` API:
+
+- **JKS** – Java KeyStore (`.jks`)
+- **JCEKS** – Java Cryptography Extension KeyStore
+- **PKCS12 / P12** – Public-Key Cryptography Standards #12 (`.p12`, `.pfx`)
+- **DKS** – Domain KeyStore (used for DNSSEC)
+- **PKCS11** – Hardware or software-based tokens (via SunPKCS11 provider)
+
+[Java Keystore Types – Oracle Documentation](https://docs.oracle.com/en/java/javase/21/docs/specs/security/standard-names.html#keystore-types)
+
+#### Plain Certificate Files
+
+These are loaded as standalone X.509 certificates or bundles:
+
+- **PEM** – Privacy-Enhanced Mail format (`.pem`)
+- **CRT** – X.509 certificate (`.crt`, often in PEM encoding)
+
+Supports **single certificates** and **PEM bundles** (e.g. full chains).
+
+## 🚀 Installation and Usage
 
 ### Kubernetes
 
@@ -33,10 +58,10 @@ Deploy manifests from `deploy/kubernetes`:
 kubectl apply -f deploy/kubernetes/
 ```
 
-- Mount your certificate secrets as files or Kubernetes `Secret`s.
-- Provide `certalert.yaml` via a ConfigMap and mount it at `/config/certalert.yaml`.
+- Mount your certificate secrets as files or Kubernetes `Secret`s
+- Provide `certalert.yaml` via a `ConfigMap` and mount it at `/config/certalert.yaml`
 
-## Configuration
+## ⚙️ Configuration
 
 ```yaml
 certalert:
@@ -47,78 +72,54 @@ certalert:
     critical-threshold: 3d
 ```
 
-### Providing Credentials
+## 🔑 Providing Credentials
 
-You can specify credentials using a dynamic resolution scheme. The following formats are supported:
+CertAlert supports dynamic credential resolution using a flexible prefix scheme:
 
-- **`env:`** – Resolves environment variables.
-  Example:
-  `env:PATH` → resolves to the value of the `PATH` environment variable.
+| Prefix        | Description                                  | Example                                      |
+| ------------- | -------------------------------------------- | -------------------------------------------- |
+| `env:`        | Resolves from environment variables          | `env:PATH`                                   |
+| `file:`       | Reads from plaintext or key-value files      | `file:/config/app.txt//KeyName`              |
+| `json:`       | Parses from JSON using dot notation          | `json:/config/app.json//database.host`       |
+| `yaml:`       | Extracts from YAML using dot notation        | `yaml:/config/app.yaml//servers.0.host`      |
+| `ini:`        | Extracts from INI using `Section.Key` format | `ini:/config/app.ini//Database.Password`     |
+| `properties:` | Loads from `.properties` files               | `properties:/config/app.properties//db.user` |
+| `toml:`       | Loads from TOML using dot notation           | `toml:/config/app.toml//database.host`       |
+| _(no prefix)_ | Treated as literal value                     | `my-secret-token-123`                        |
 
-- **`file:`** – Resolves values from plain text or key-value files.
-  Example:
-  `file:/config/app.txt//KeyName` → extracts `KeyName=value` from `app.txt`.
-  `file:/config/token.txt` → returns the entire contents of `token.txt`.
+## 📈 Prometheus Metrics
 
-- **`json:`** – Resolves values from JSON files using dot notation.
-  Example:
-  `json:/config/app.json//database.host` → resolves to `app.json → database → host`.
-  `json:/config/app.json//servers.0.host` → supports array indexing.
+CertAlert exposes a set of Prometheus metrics to monitor certificate expirations and validity.
 
-- **`yaml:`** – Resolves values from YAML files using dot notation.
-  Example:
-  `yaml:/config/app.yaml//server.port` → resolves to `app.yaml → server → port`.
-  `yaml:/config/app.yaml//servers.0.host` → supports array indexing.
-
-- **`ini:`** – Resolves values from INI files using `Section.Key` format.
-  Example:
-  `ini:/config/app.ini//Database.Password` → resolves to `[Database] → Password`.
-
-- **`properties:`** – Resolves values from `.properties` files using the key name.
-  Example:
-  `properties:/config/app.properties//db.user` → resolves to `db.user=value`.
-
-- **`toml:`** – Resolves values from TOML files using dot notation.
-  Example:
-  `toml:/config/app.toml//database.host`
-  `toml:/config/app.toml//servers.0.port`
-
-- **No prefix** – Treated as a literal value and returned unchanged.
-  Example:
-  `my-secret-token-123` → returns as-is.
-
-## Prometheus Metrics
-
-CertAlert exposes a set of Prometheus metrics to monitor certificate expirations and validity. **Metrics are only
-emitted after each polling interval for configured certificates**, so you may not see data immediately until the first
-scan completes.
+**Note:** Metrics are only emitted **after** each polling interval, so they may not appear immediately.
 
 ### Available Metrics
 
 1. **`certalert_certificate_expiration_seconds`**
 
    - **Type:** Gauge
-   - **Description:** Unix epoch timestamp (seconds) when the certificate expires (`Not After`).
+   - **Description:** Unix timestamp when the certificate expires (`Not After`)
    - **Labels:** `certificate_name`, `alias`
 
 2. **`certalert_certificate_validity`**
+
    - **Type:** Gauge
-   - **Description:** Certificate validity state (0 = valid, 1 = invalid or expired).
+   - **Description:** Validity state (`0 = valid`, `1 = invalid or expired`)
    - **Labels:** `certificate_name`, `alias`
 
-Metrics are scraped at `/metrics` (or `/metrics` when using path mapping).
+👉 Metrics are scraped at `/metrics`.
 
-## Contributing
+## 🤝 Contributing
 
-We welcome contributions of all kinds! Please see our [CONTRIBUTING.md](.github/CONTRIBUTING.md) for guidelines.
+We welcome contributions of all kinds!
+Please see our [CONTRIBUTING.md](.github/CONTRIBUTING.md) for guidelines.
 
-Key steps:
+1.  Fork the repository
+2.  Create a feature branch
+3.  Run tests and verify
+4.  Submit a Pull Request with a clear description
 
-1. Fork the repository
-2. Create a feature branch
-3. Run tests and verify
-4. Submit a Pull Request with clear description
+## 📄 License
 
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License.
+See the [LICENSE](LICENSE) file for details.
