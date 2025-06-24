@@ -140,3 +140,12 @@ certalert:
     - name: no_extension
       type: pkcs12
       path: ./tests/certs/p12/no_extension
+    - name: single cert
+      type: crt
+      path: ./tests/certs/crt/single.crt
+    - name: multiple certs
+      type: crt
+      path: ./tests/certs/crt/multiple.crt
+    - name: single pem
+      type: pem
+      path: ./tests/certs/pem/single.pem
