@@ -150,11 +150,12 @@
           <tr>
             <th></th>
             <th onclick="sortTable(1)">Certificate Name</th>
-            <th onclick="sortTable(2)">Alias</th>
-            <th onclick="sortTable(3)">Subject</th>
-            <th onclick="sortTable(4)">Not Before</th>
-            <th onclick="sortTable(5)">Expiry Date</th>
-            <th onclick="sortTable(6)">Time Remaining</th>
+            <th onclick="sortTable(2)">Type</th>
+            <th onclick="sortTable(3)">Alias</th>
+            <th onclick="sortTable(4)">Subject</th>
+            <th onclick="sortTable(5)">Not Before</th>
+            <th onclick="sortTable(6)">Expiry Date</th>
+            <th onclick="sortTable(7)">Time Remaining</th>
           </tr>
         </thead>
         <tbody>
@@ -167,6 +168,7 @@
               </span>
             </td>
             <td th:text="${cert.name}"></td>
+            <td th:text="${cert.type}"></td>
             <td th:text="${cert.alias}"></td>
             <td th:text="${cert.subject}"></td>
             <td th:text="${cert.notBeforeFormatted}"></td>
