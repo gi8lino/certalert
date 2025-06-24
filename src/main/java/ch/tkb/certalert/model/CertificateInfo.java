@@ -1,5 +1,6 @@
 package ch.tkb.certalert.model;
 
+import lombok.Builder;
 import lombok.Data;
 
 import java.time.Instant;
@@ -9,8 +10,10 @@ import java.time.Instant;
  * with a mutable 'seen' flag for pruning.
  */
 @Data
+@Builder
 public class CertificateInfo {
   private final String name;
+  private final String type;
   private final String alias;
   private final String subject;
   private final Instant notBefore;
@@ -19,6 +22,7 @@ public class CertificateInfo {
   /**
    * Tracks whether this info was seen in the latest poll cycle.
    */
+  @Builder.Default
   private boolean seen = true;
 
   public enum Status {

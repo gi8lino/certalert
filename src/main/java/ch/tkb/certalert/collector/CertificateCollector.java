@@ -69,14 +69,14 @@ public class CertificateCollector {
             List<X509Certificate> certs = CertificateLoader.loadAll(entry.path());
             for (int i = 0; i < certs.size(); i++) {
               String alias = certs.size() == 1 ? "default" : "cert" + (i + 1);
-              processSingleCert(entry.name(), alias, certs.get(i));
+              processSingleCert(entry.type(), entry.name(), alias, certs.get(i));
             }
           }
           case "jceks", "jks", "dks", "p12", "pkcs11", "pkcs12" -> {
             String pw = Resolver.resolve(entry.password());
             KeyStore ks = KeystoreLoader.load(entry.type(), entry.path(), pw);
             for (String alias : Collections.list(ks.aliases())) {
-              processAlias(entry.name(), alias, ks);
+              processAlias(entry.type(), entry.name(), alias, ks);
             }
           }
           default -> throw new IllegalArgumentException("Unsupported certificate type: " + entry.type());
@@ -108,9 +108,9 @@ public class CertificateCollector {
   /**
    * Handle X.509 cert directly (non-keystore).
    */
-  private void processSingleCert(String name, String alias, X509Certificate cert) {
+  private void processSingleCert(String type, String name, String alias, X509Certificate cert) {
     try {
-      var newInfo = buildInfoFromCert(name, alias, cert);
+      var newInfo = buildInfoFromCert(type, name, alias, cert);
       Optional<CertificateInfo> existing = certificateInfos.stream()
           .filter(ci -> ci.getName().equals(name) && ci.getAlias().equals(alias))
           .peek(ci -> ci.setSeen(true))
@@ -130,16 +130,16 @@ public class CertificateCollector {
       certificateInfos.add(newInfo);
       publishMetrics(newInfo);
     } catch (Exception e) {
-      handleAliasError(name, alias, e);
+      handleAliasError(type, name, alias, e);
     }
   }
 
   /**
    * Handle alias inside a keystore.
    */
-  private void processAlias(String name, String alias, KeyStore ks) {
+  private void processAlias(String type, String name, String alias, KeyStore ks) {
     try {
-      var newInfo = buildInfo(name, alias, ks);
+      var newInfo = buildInfo(type, name, alias, ks);
       Optional<CertificateInfo> existing = certificateInfos.stream()
           .filter(ci -> ci.getName().equals(name) && ci.getAlias().equals(alias))
           .peek(ci -> ci.setSeen(true))
@@ -159,29 +159,46 @@ public class CertificateCollector {
       certificateInfos.add(newInfo);
       publishMetrics(newInfo);
     } catch (Exception e) {
-      handleAliasError(name, alias, e);
+      handleAliasError(type, name, alias, e);
     }
   }
 
   /**
    * Extracts X509 info from a single certificate.
    */
-  private CertificateInfo buildInfoFromCert(String name, String alias, X509Certificate cert) {
+  private CertificateInfo buildInfoFromCert(String type, String name, String alias, X509Certificate cert) {
     Instant nb = cert.getNotBefore().toInstant();
     Instant na = cert.getNotAfter().toInstant();
     Status status = Instant.now().isAfter(na) ? Status.EXPIRED : Status.VALID;
-    return new CertificateInfo(name, alias, cert.getSubjectX500Principal().getName(), nb, na, status);
+    return CertificateInfo.builder()
+        .name(name)
+        .type(type)
+        .alias(alias)
+        .subject(cert.getSubjectX500Principal().getName())
+        .notBefore(nb)
+        .notAfter(na)
+        .status(status)
+        .build();
+
   }
 
   /**
    * Extracts X509 info from a keystore alias.
    */
-  private CertificateInfo buildInfo(String name, String alias, KeyStore ks) throws Exception {
+  private CertificateInfo buildInfo(String type, String name, String alias, KeyStore ks) throws Exception {
     X509Certificate cert = (X509Certificate) ks.getCertificate(alias);
     if (cert == null) {
-      return new CertificateInfo(name, alias, "certificate is missing", null, null, Status.INVALID);
+      return CertificateInfo.builder()
+          .name(name)
+          .type(type)
+          .alias(alias)
+          .subject("certificate is missing")
+          .notBefore(null)
+          .notAfter(null)
+          .status(Status.INVALID)
+          .build();
     }
-    return buildInfoFromCert(name, alias, cert);
+    return buildInfoFromCert(type, name, alias, cert);
   }
 
   /**
@@ -195,9 +212,15 @@ public class CertificateCollector {
   /**
    * Handles alias-level load/parse errors.
    */
-  private void handleAliasError(String name, String alias, Exception e) {
+  private void handleAliasError(String type, String name, String alias, Exception e) {
     metricsPublisher.publishValidity(name, alias, false);
-    var errInfo = new CertificateInfo(name, alias, e.getMessage(), null, null, Status.INVALID);
+    var errInfo = CertificateInfo.builder()
+        .name(name)
+        .type(type)
+        .alias(alias)
+        .subject(e.getMessage())
+        .status(Status.INVALID)
+        .build();
 
     int idx = findCertIndex(name, alias);
     if (idx >= 0) {
@@ -216,7 +239,7 @@ public class CertificateCollector {
    * Handles total keystore load failure.
    */
   private void handleLoadError(CertificateConfig.CertificateEntry entry, Exception e) {
-    handleAliasError(entry.name(), "unknown", e);
+    handleAliasError(entry.type(), entry.name(), "unknown", e);
   }
 
   /**
