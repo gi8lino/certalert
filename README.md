@@ -1,6 +1,5 @@
 # CertAlert
 
-[![Release](https://img.shields.io/github/release/gi8lino/certalert.svg?style=flat-square)](https://github.com/gi8lino/certalert/releases/latest)
 [![GitHub tag](https://img.shields.io/github/tag/gi8lino/certalert.svg?style=flat-square)](https://github.com/gi8lino/certalert/releases/latest)
 ![Tests](https://github.com/gi8lino/certalert/actions/workflows/tests.yml/badge.svg)
 [![Build](https://github.com/gi8lino/certalert/actions/workflows/release.yml/badge.svg)](https://github.com/gi8lino/certalert/actions/workflows/release.yml)
