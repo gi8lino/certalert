@@ -7,22 +7,22 @@ Thank you for your interest in contributing to Certalert! We welcome all contrib
 1. **Fork the Repository**: Click the "Fork" button at the top of the repository page.
 2. **Clone Your Fork**:
    ```sh
-   git clone https://github.com/your-username/cascader.git
-   cd cascader
+   git clone https://github.com/your-username/certalert.git
+   cd certalert
    ```
 3. **Create a New Branch**:
    ```sh
    git checkout -b feature-branch-name
    ```
 4. **Set Up the Development Environment**:
-   - Ensure you have Go installed (refer to the Go version in `go.mod`).
+   - Ensure you have gradle installed.
    - Install dependencies using:
      ```sh
-     make download
+     ./gradlew dependencies
      ```
    - Run tests to confirm everything is working:
      ```sh
-     make test
+     ./gradlew test
      ```
 
 ## Contribution Guidelines
