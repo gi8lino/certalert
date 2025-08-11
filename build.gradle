@@ -48,7 +48,7 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok:1.18.38'
 
     // Monitoring: Prometheus integration via Micrometer
-    implementation 'io.micrometer:micrometer-registry-prometheus:1.15.1'
+    implementation 'io.micrometer:micrometer-registry-prometheus:1.15.3'
 
     // Utility library: Guava
     implementation 'com.google.guava:guava:33.4.8-jre'
