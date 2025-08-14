@@ -54,10 +54,10 @@ dependencies {
     implementation 'com.google.guava:guava:33.4.8-jre'
 
     // Jackson for JSON (already included via Spring Boot but safe to be explicit)
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.19.1'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.19.2'
 
     // Jackson for YAML
-    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.19.1'
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.19.2'
 
     // INI support
     implementation 'org.ini4j:ini4j:0.5.4'
