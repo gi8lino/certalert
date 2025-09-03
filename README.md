@@ -1,8 +1,8 @@
 # CertAlert
 
-[![GitHub tag](https://img.shields.io/github/tag/gi8lino/certalert.svg?style=flat-square)](https://github.com/gi8lino/certalert/releases/latest)
-![Tests](https://github.com/gi8lino/certalert/actions/workflows/tests.yml/badge.svg)
-[![Build](https://github.com/gi8lino/certalert/actions/workflows/release.yml/badge.svg)](https://github.com/gi8lino/certalert/actions/workflows/release.yml)
+[!tag](https://img.shields.io/github/tag/gi8lino/certalert.svg?style=flat-square)](https://github.com/gi8lino/certalert/releases/latest)
+![tests](https://github.com/gi8lino/certalert/actions/workflows/tests.yml/badge.svg)
+[![build](https://github.com/gi8lino/certalert/actions/workflows/release.yml/badge.svg)](https://github.com/gi8lino/certalert/actions/workflows/release.yml)
 [![license](https://img.shields.io/github/license/gi8lino/certalert.svg?style=flat-square)](LICENSE)
 
 ---
@@ -13,7 +13,6 @@
 
 - Periodic certificate scanning for expiration and validity
 - Dashboard view showing:
-
   - `Not Before` / `Not After` dates
   - Time until expiration (or since expiration)
   - Status classification (`VALID`, `INVALID`, `EXPIRED`)
@@ -95,13 +94,11 @@ CertAlert exposes a set of Prometheus metrics to monitor certificate expirations
 ### Available Metrics
 
 1. **`certalert_certificate_expiration_seconds`**
-
    - **Type:** Gauge
    - **Description:** Unix timestamp when the certificate expires (`Not After`)
    - **Labels:** `certificate_name`, `alias`
 
 2. **`certalert_certificate_validity`**
-
    - **Type:** Gauge
    - **Description:** Validity state (`0 = valid`, `1 = invalid or expired`)
    - **Labels:** `certificate_name`, `alias`
