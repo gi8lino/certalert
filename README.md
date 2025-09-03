@@ -1,6 +1,6 @@
 # CertAlert
 
-[!tag](https://img.shields.io/github/tag/gi8lino/certalert.svg?style=flat-square)](https://github.com/gi8lino/certalert/releases/latest)
+[![tag](https://img.shields.io/github/tag/gi8lino/certalert.svg?style=flat-square)](https://github.com/gi8lino/certalert/releases/latest)
 ![tests](https://github.com/gi8lino/certalert/actions/workflows/tests.yml/badge.svg)
 [![build](https://github.com/gi8lino/certalert/actions/workflows/release.yml/badge.svg)](https://github.com/gi8lino/certalert/actions/workflows/release.yml)
 [![license](https://img.shields.io/github/license/gi8lino/certalert.svg?style=flat-square)](LICENSE)
