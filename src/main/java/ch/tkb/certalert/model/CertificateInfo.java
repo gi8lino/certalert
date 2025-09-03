@@ -13,6 +13,8 @@ import java.time.Instant;
 @Builder
 public class CertificateInfo {
   private final String name;
+  private final String path;
+  private final String fileName;
   private final String type;
   private final String alias;
   private final String subject;

@@ -44,6 +44,7 @@
         text-align: center;
       }
 
+      /* Keep the “status + name” boundary clean */
       th:nth-child(2),
       td:nth-child(2) {
         border-left: none;
@@ -56,12 +57,20 @@
         background-color: #343a40;
         color: #fff;
         z-index: 3;
+        white-space: nowrap; /* force text + arrow on same line */
+        text-align: left; /* make sure text aligns neatly */
+      }
+
+      th.asc::after,
+      th.desc::after {
+        display: inline-block; /* sit next to text */
+        margin-left: 4px; /* little space from text */
+        font-size: 0.9em; /* smaller arrow if needed */
       }
 
       th.asc::after {
         content: " ▲";
       }
-
       th.desc::after {
         content: " ▼";
       }
@@ -69,7 +78,6 @@
       tr:nth-child(even) {
         background: #f2f2f2;
       }
-
       tr:hover {
         background-color: #e0e0e0;
       }
@@ -77,15 +85,12 @@
       tr.status-ok {
         background-color: #d4edda !important;
       }
-
       tr.status-warn {
         background-color: #fff3cd !important;
       }
-
       tr.status-crit {
         background-color: #f8d7da !important;
       }
-
       tr.status-error {
         color: white;
         background-color: red !important;
@@ -102,11 +107,9 @@
       .status-cell span.valid {
         color: #28a745;
       }
-
       .status-cell span.invalid {
         color: #dc3545;
       }
-
       .status-cell span.expired {
         color: #6c757d;
       }
@@ -115,17 +118,27 @@
       tr.status-ok .status-cell {
         color: #0b8f42; /* Green */
       }
-
       tr.status-warn .status-cell {
         color: #ffc107; /* Yellow */
       }
-
       tr.status-crit .status-cell {
         color: red; /* Red for expired */
       }
-
       tr.status-error .status-cell {
         color: white; /* White for error */
+      }
+
+      /* Scoped truncation/tooltip for the File column only */
+      td.file-cell .truncate {
+        display: inline-block;
+        max-width: 220px; /* adjust for your layout */
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        vertical-align: middle;
+      }
+      td.file-cell .truncate[title] {
+        cursor: help; /* indicate tooltip only when title present */
       }
 
       footer {
@@ -149,13 +162,14 @@
         <thead>
           <tr>
             <th></th>
-            <th onclick="sortTable(1)">Certificate Name</th>
-            <th onclick="sortTable(2)">Type</th>
-            <th onclick="sortTable(3)">Alias</th>
-            <th onclick="sortTable(4)">Subject</th>
-            <th onclick="sortTable(5)">Not Before</th>
-            <th onclick="sortTable(6)">Expiry Date</th>
-            <th onclick="sortTable(7)">Time Remaining</th>
+            <th onclick="sortTable(1)"><span>Certificate Name</span></th>
+            <th onclick="sortTable(2)">File</th>
+            <th onclick="sortTable(3)">Type</th>
+            <th onclick="sortTable(4)">Alias</th>
+            <th onclick="sortTable(5)">Subject</th>
+            <th onclick="sortTable(6)">Not Before</th>
+            <th onclick="sortTable(7)">Expiry Date</th>
+            <th onclick="sortTable(8)">Time Remaining</th>
           </tr>
         </thead>
         <tbody>
@@ -164,10 +178,16 @@
               <span
                 th:text="${cert.statusFragmentName}"
                 th:replace="~{fragments/icons :: ${cert.statusFragmentName}}"
-              >
-              </span>
+              ></span>
             </td>
             <td th:text="${cert.name}"></td>
+            <td class="file-cell">
+              <span
+                class="truncate"
+                th:text="${cert.fileName}"
+                th:title="${cert.path}"
+              ></span>
+            </td>
             <td th:text="${cert.type}"></td>
             <td th:text="${cert.alias}"></td>
             <td th:text="${cert.subject}"></td>
@@ -189,7 +209,7 @@
 
     <script>
       let currentSortColumn = 1;
-      let currentSortDir = "asc";
+      let currentSortDir = "desc";
 
       function sortTable(columnIndex) {
         const table = document.getElementById("certTable");
@@ -197,9 +217,7 @@
         const headers = table.tHead.rows[0].cells;
 
         // Clear sorting indicators
-        for (const th of headers) {
-          th.classList.remove("asc", "desc");
-        }
+        for (const th of headers) th.classList.remove("asc", "desc");
 
         const dir =
           currentSortColumn === columnIndex && currentSortDir === "asc"
@@ -226,9 +244,7 @@
           );
         });
 
-        for (const row of rows) {
-          table.tBodies[0].appendChild(row);
-        }
+        for (const row of rows) table.tBodies[0].appendChild(row);
       }
 
       document.addEventListener("DOMContentLoaded", function () {

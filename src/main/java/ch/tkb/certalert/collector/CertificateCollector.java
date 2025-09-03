@@ -13,11 +13,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.security.KeyStore;
+import java.io.File;
 import java.security.cert.X509Certificate;
+import java.security.KeyStore;
+import java.time.format.DateTimeFormatter;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -69,14 +70,14 @@ public class CertificateCollector {
             List<X509Certificate> certs = CertificateLoader.loadAll(entry.path());
             for (int i = 0; i < certs.size(); i++) {
               String alias = certs.size() == 1 ? "default" : "cert" + (i + 1);
-              processSingleCert(entry.type(), entry.name(), alias, certs.get(i));
+              processSingleCert(entry.path(), entry.type(), entry.name(), alias, certs.get(i));
             }
           }
           case "jceks", "jks", "dks", "p12", "pkcs11", "pkcs12" -> {
             String pw = Resolver.resolve(entry.password());
             KeyStore ks = KeystoreLoader.load(entry.type(), entry.path(), pw);
             for (String alias : Collections.list(ks.aliases())) {
-              processAlias(entry.type(), entry.name(), alias, ks);
+              processAlias(entry.path(), entry.type(), entry.name(), alias, ks);
             }
           }
           default -> throw new IllegalArgumentException("Unsupported certificate type: " + entry.type());
@@ -108,9 +109,9 @@ public class CertificateCollector {
   /**
    * Handle X.509 cert directly (non-keystore).
    */
-  private void processSingleCert(String type, String name, String alias, X509Certificate cert) {
+  private void processSingleCert(String path, String type, String name, String alias, X509Certificate cert) {
     try {
-      var newInfo = buildInfoFromCert(type, name, alias, cert);
+      var newInfo = buildInfoFromCert(path, type, name, alias, cert);
       Optional<CertificateInfo> existing = certificateInfos.stream()
           .filter(ci -> ci.getName().equals(name) && ci.getAlias().equals(alias))
           .peek(ci -> ci.setSeen(true))
@@ -130,16 +131,16 @@ public class CertificateCollector {
       certificateInfos.add(newInfo);
       publishMetrics(newInfo);
     } catch (Exception e) {
-      handleAliasError(type, name, alias, e);
+      handleAliasError(path, type, name, alias, e);
     }
   }
 
   /**
    * Handle alias inside a keystore.
    */
-  private void processAlias(String type, String name, String alias, KeyStore ks) {
+  private void processAlias(String path, String type, String name, String alias, KeyStore ks) {
     try {
-      var newInfo = buildInfo(type, name, alias, ks);
+      var newInfo = buildInfo(path, type, name, alias, ks);
       Optional<CertificateInfo> existing = certificateInfos.stream()
           .filter(ci -> ci.getName().equals(name) && ci.getAlias().equals(alias))
           .peek(ci -> ci.setSeen(true))
@@ -159,18 +160,23 @@ public class CertificateCollector {
       certificateInfos.add(newInfo);
       publishMetrics(newInfo);
     } catch (Exception e) {
-      handleAliasError(type, name, alias, e);
+      handleAliasError(path, type, name, alias, e);
     }
   }
 
   /**
    * Extracts X509 info from a single certificate.
    */
-  private CertificateInfo buildInfoFromCert(String type, String name, String alias, X509Certificate cert) {
+  private CertificateInfo buildInfoFromCert(String path, String type, String name, String alias, X509Certificate cert) {
     Instant nb = cert.getNotBefore().toInstant();
     Instant na = cert.getNotAfter().toInstant();
     Status status = Instant.now().isAfter(na) ? Status.EXPIRED : Status.VALID;
+    File f = new File(path);
+    String fileName = f.getName();
+
     return CertificateInfo.builder()
+        .path(path)
+        .fileName(fileName)
         .name(name)
         .type(type)
         .alias(alias)
@@ -185,10 +191,11 @@ public class CertificateCollector {
   /**
    * Extracts X509 info from a keystore alias.
    */
-  private CertificateInfo buildInfo(String type, String name, String alias, KeyStore ks) throws Exception {
+  private CertificateInfo buildInfo(String path, String type, String name, String alias, KeyStore ks) throws Exception {
     X509Certificate cert = (X509Certificate) ks.getCertificate(alias);
     if (cert == null) {
       return CertificateInfo.builder()
+          .path(path)
           .name(name)
           .type(type)
           .alias(alias)
@@ -198,7 +205,7 @@ public class CertificateCollector {
           .status(Status.INVALID)
           .build();
     }
-    return buildInfoFromCert(type, name, alias, cert);
+    return buildInfoFromCert(path, type, name, alias, cert);
   }
 
   /**
@@ -206,15 +213,16 @@ public class CertificateCollector {
    */
   private void publishMetrics(CertificateInfo info) {
     metricsPublisher.publishExpiration(info);
-    metricsPublisher.publishValidity(info.getName(), info.getAlias(), info.getStatus() == Status.VALID);
+    metricsPublisher.publishValidity(info.getPath(), info.getName(), info.getAlias(), info.getStatus() == Status.VALID);
   }
 
   /**
    * Handles alias-level load/parse errors.
    */
-  private void handleAliasError(String type, String name, String alias, Exception e) {
-    metricsPublisher.publishValidity(name, alias, false);
+  private void handleAliasError(String path, String type, String name, String alias, Exception e) {
+    metricsPublisher.publishValidity(path, name, alias, false);
     var errInfo = CertificateInfo.builder()
+        .path(path)
         .name(name)
         .type(type)
         .alias(alias)
@@ -229,17 +237,17 @@ public class CertificateCollector {
         log.warn("Error for {}:{} changed {}", name, alias, e.getMessage());
         certificateInfos.set(idx, errInfo);
       }
-    } else {
-      log.error("Error loading {}:{} {}", name, alias, e.getMessage());
-      certificateInfos.add(errInfo);
+      return;
     }
+    log.error("Error loading {}:{} {}", name, alias, e.getMessage());
+    certificateInfos.add(errInfo);
   }
 
   /**
    * Handles total keystore load failure.
    */
   private void handleLoadError(CertificateConfig.CertificateEntry entry, Exception e) {
-    handleAliasError(entry.type(), entry.name(), "unknown", e);
+    handleAliasError(entry.path(), entry.type(), entry.name(), "unknown", e);
   }
 
   /**

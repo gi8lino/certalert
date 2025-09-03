@@ -10,9 +10,9 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import java.time.Duration;
+import java.time.format.DateTimeFormatter;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
@@ -101,7 +101,8 @@ public class DashboardController {
         : determineStatusClass(notAfter, now);
 
     return new CertificateView(
-        info.getStatus(), info.getName(), info.getType(), info.getAlias(), info.getSubject(),
+        info.getStatus(), info.getName(), info.getPath(), info.getFileName(), info.getType(), info.getAlias(),
+        info.getSubject(),
         formattedBefore, formattedAfter,
         remaining, statusClass);
   }

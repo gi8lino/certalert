@@ -51,7 +51,8 @@ public class CertificateMetricsPublisher {
           .description("Certificate expiration time in epoch seconds")
           .tags(
               "certificate_name", certInfo.getName(),
-              "alias", certInfo.getAlias())
+              "alias", certInfo.getAlias(),
+              "path", certInfo.getPath())
           .register(meterRegistry);
       return holder;
     }).set(epochSeconds);
@@ -60,7 +61,7 @@ public class CertificateMetricsPublisher {
   /**
    * Publishes or updates the validity metric for a given certificate.
    */
-  public void publishValidity(String certName, String alias, boolean isValid) {
+  public void publishValidity(String path, String certName, String alias, boolean isValid) {
     String aliasKey = certName + "|" + alias;
     double status = isValid ? 0 : 1;
 
@@ -70,7 +71,8 @@ public class CertificateMetricsPublisher {
           .description("Indicates if a certificate is valid (0 = valid, 1 = invalid)")
           .tags(
               "certificate_name", certName,
-              "alias", alias)
+              "alias", alias,
+              "path", path)
           .register(meterRegistry);
       return holder;
     }).set(status);

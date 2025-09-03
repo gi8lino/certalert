@@ -8,6 +8,8 @@ import ch.tkb.certalert.model.CertificateInfo;
 public record CertificateView(
     CertificateInfo.Status status, // Status (VALID, EXPIRED, INVALID)
     String name, // Certificate name
+    String path, // Path to certificate file
+    String fileName, // File name
     String type, // Certificate type (PEM, CRT, etc.)
     String alias, // Keystore alias
     String subject, // Subject DN or error message
