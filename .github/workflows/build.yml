@@ -48,7 +48,7 @@ jobs:
 
       - name: Upload JAR artifact (for release workflow)
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: jar
           path: build/libs/*.jar
