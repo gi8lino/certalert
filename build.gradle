@@ -14,7 +14,7 @@ buildscript {
 
     dependencies {
         // Spring Boot Gradle plugin for building and running the app
-        classpath("org.springframework.boot:spring-boot-gradle-plugin:3.5.7")
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:3.5.8")
     }
 }
 
@@ -37,11 +37,11 @@ group = 'ch.tkb.certalert'
 // Define project dependencies
 dependencies {
     // Core Spring Boot dependencies
-    implementation 'org.springframework.boot:spring-boot-starter:3.5.7'
-    implementation 'org.springframework.boot:spring-boot-starter-actuator:3.5.7'
-    implementation 'org.springframework.boot:spring-boot-starter-web:3.5.7'
-    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf:3.5.7'
-    implementation 'org.springframework.boot:spring-boot-starter-validation:3.5.7'
+    implementation 'org.springframework.boot:spring-boot-starter:3.5.8'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator:3.5.8'
+    implementation 'org.springframework.boot:spring-boot-starter-web:3.5.8'
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf:3.5.8'
+    implementation 'org.springframework.boot:spring-boot-starter-validation:3.5.8'
 
     // Lombok for annotation processing
     compileOnly 'org.projectlombok:lombok:1.18.42'
@@ -66,7 +66,7 @@ dependencies {
     implementation 'org.tomlj:tomlj:1.1.1'
 
     // Compile-time annotation processor for configuration metadata
-    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor:3.5.7'
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor:3.5.8'
 
     // Use JUnit BOM to align all versions
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
