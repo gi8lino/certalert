@@ -54,7 +54,7 @@ dependencies {
     implementation 'com.google.guava:guava:33.6.0-jre'
 
     // Jackson for JSON (already included via Spring Boot but safe to be explicit)
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.21.4'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.22.0'
 
     // Jackson for YAML
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.21.4'
