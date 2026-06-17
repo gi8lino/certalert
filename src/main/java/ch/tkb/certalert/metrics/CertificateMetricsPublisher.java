@@ -42,6 +42,10 @@ public class CertificateMetricsPublisher {
    */
   public void publishExpiration(CertificateInfo certInfo) {
     Instant expiry = certInfo.getNotAfter();
+    if (expiry == null) {
+      return;
+    }
+
     long epochSeconds = expiry.getEpochSecond();
     String aliasKey = certInfo.getName() + "|" + certInfo.getAlias();
 
