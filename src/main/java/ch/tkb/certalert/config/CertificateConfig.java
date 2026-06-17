@@ -18,7 +18,7 @@ import java.util.List;
 @ConfigurationProperties(prefix = "certalert")
 public record CertificateConfig(
     Duration checkInterval, // Interval between checks (e.g., PT2M)
-    @Valid List<CertificateEntry> certificates, // List of configured certificates
+    List<@Valid CertificateEntry> certificates, // List of configured certificates
     Dashboard dashboard // Dashboard-specific settings
 ) {
 
