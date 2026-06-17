@@ -91,6 +91,7 @@ public class CertificateCollector {
     }
 
     certificateInfos.set(List.copyOf(collected));
+    metricsPublisher.prune(collected);
     lastUpdateTime = Instant.now();
   }
 
@@ -120,7 +121,7 @@ public class CertificateCollector {
       Map<String, CertificateInfo> existing) {
     try {
       var newInfo = buildInfoFromCert(path, type, name, alias, cert);
-      Optional<CertificateInfo> oldInfo = Optional.ofNullable(existing.get(identityKey(name, alias)));
+      Optional<CertificateInfo> oldInfo = Optional.ofNullable(existing.get(identityKey(path, type, name, alias)));
 
       if (oldInfo.isPresent()) {
         var old = oldInfo.get();
@@ -151,7 +152,7 @@ public class CertificateCollector {
       Map<String, CertificateInfo> existing) {
     try {
       var newInfo = buildInfo(path, type, name, alias, ks);
-      Optional<CertificateInfo> oldInfo = Optional.ofNullable(existing.get(identityKey(name, alias)));
+      Optional<CertificateInfo> oldInfo = Optional.ofNullable(existing.get(identityKey(path, type, name, alias)));
 
       if (oldInfo.isPresent()) {
         var old = oldInfo.get();
@@ -219,7 +220,7 @@ public class CertificateCollector {
    */
   private void publishMetrics(CertificateInfo info) {
     metricsPublisher.publishExpiration(info);
-    metricsPublisher.publishValidity(info.getPath(), info.getName(), info.getAlias(), info.getStatus() == Status.VALID);
+    metricsPublisher.publishValidity(info, info.getStatus() == Status.VALID);
   }
 
   /**
@@ -232,7 +233,6 @@ public class CertificateCollector {
       String alias,
       Exception e,
       Map<String, CertificateInfo> existing) {
-    metricsPublisher.publishValidity(path, name, alias, false);
     var errInfo = CertificateInfo.builder()
         .path(path)
         .name(name)
@@ -241,8 +241,9 @@ public class CertificateCollector {
         .subject(e.getMessage())
         .status(Status.INVALID)
         .build();
+    metricsPublisher.publishValidity(errInfo, false);
 
-    CertificateInfo oldInfo = existing.get(identityKey(name, alias));
+    CertificateInfo oldInfo = existing.get(identityKey(path, type, name, alias));
     if (oldInfo != null) {
       if (!errInfo.equals(oldInfo)) {
         log.warn("Error for {}:{} changed {}", name, alias, e.getMessage());
@@ -269,12 +270,12 @@ public class CertificateCollector {
   private Map<String, CertificateInfo> indexByIdentity(List<CertificateInfo> infos) {
     Map<String, CertificateInfo> index = new HashMap<>();
     for (CertificateInfo info : infos) {
-      index.put(identityKey(info.getName(), info.getAlias()), info);
+      index.put(identityKey(info.getPath(), info.getType(), info.getName(), info.getAlias()), info);
     }
     return index;
   }
 
-  private String identityKey(String name, String alias) {
-    return name + "|" + alias;
+  private String identityKey(String path, String type, String name, String alias) {
+    return path + "|" + type + "|" + name + "|" + alias;
   }
 }
