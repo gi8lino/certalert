@@ -1,5 +1,6 @@
 package ch.tkb.certalert.metrics;
 
+import ch.tkb.certalert.model.CertificateIdentity;
 import ch.tkb.certalert.model.CertificateInfo;
 import com.google.common.util.concurrent.AtomicDouble;
 import io.micrometer.core.instrument.Gauge;
@@ -20,11 +21,11 @@ public class CertificateMetricsPublisher {
   private final MeterRegistry meterRegistry;
 
   /** Holds registered expiration metrics keyed by certificate identity. */
-  private final ConcurrentMap<MetricKey, MetricState> certExpirationMetrics =
+  private final ConcurrentMap<CertificateIdentity, MetricState> certExpirationMetrics =
       new ConcurrentHashMap<>();
 
   /** Holds registered validity metrics keyed by certificate identity. */
-  private final ConcurrentMap<MetricKey, MetricState> certValidityMetrics =
+  private final ConcurrentMap<CertificateIdentity, MetricState> certValidityMetrics =
       new ConcurrentHashMap<>();
 
   /** Initializes the publisher with a MeterRegistry. */
@@ -40,7 +41,7 @@ public class CertificateMetricsPublisher {
     }
 
     long epochSeconds = expiry.getEpochSecond();
-    MetricKey key = MetricKey.from(certInfo);
+    CertificateIdentity key = CertificateIdentity.from(certInfo);
 
     certExpirationMetrics
         .computeIfAbsent(
@@ -65,7 +66,7 @@ public class CertificateMetricsPublisher {
 
   /** Publishes or updates the validity metric for a given certificate. */
   public void publishValidity(CertificateInfo certInfo, boolean isValid) {
-    MetricKey key = MetricKey.from(certInfo);
+    CertificateIdentity key = CertificateIdentity.from(certInfo);
     double status = isValid ? 0 : 1;
 
     certValidityMetrics
@@ -90,12 +91,12 @@ public class CertificateMetricsPublisher {
 
   /** Removes metrics for certificate identities that are no longer present. */
   public void prune(Collection<CertificateInfo> activeCertificates) {
-    Set<MetricKey> activeKeys =
-        activeCertificates.stream().map(MetricKey::from).collect(Collectors.toSet());
-    Set<MetricKey> expiringKeys =
+    Set<CertificateIdentity> activeKeys =
+        activeCertificates.stream().map(CertificateIdentity::from).collect(Collectors.toSet());
+    Set<CertificateIdentity> expiringKeys =
         activeCertificates.stream()
             .filter(certInfo -> certInfo.getNotAfter() != null)
-            .map(MetricKey::from)
+            .map(CertificateIdentity::from)
             .collect(Collectors.toSet());
 
     removeInactive(certValidityMetrics, activeKeys);
@@ -103,7 +104,8 @@ public class CertificateMetricsPublisher {
   }
 
   private void removeInactive(
-      ConcurrentMap<MetricKey, MetricState> metrics, Set<MetricKey> activeKeys) {
+      ConcurrentMap<CertificateIdentity, MetricState> metrics,
+      Set<CertificateIdentity> activeKeys) {
     metrics
         .entrySet()
         .removeIf(
@@ -114,13 +116,6 @@ public class CertificateMetricsPublisher {
               meterRegistry.remove(entry.getValue().gauge());
               return true;
             });
-  }
-
-  private record MetricKey(String path, String type, String certName, String alias) {
-    private static MetricKey from(CertificateInfo certInfo) {
-      return new MetricKey(
-          certInfo.getPath(), certInfo.getType(), certInfo.getName(), certInfo.getAlias());
-    }
   }
 
   private record MetricState(AtomicDouble holder, Meter gauge) {}

@@ -2,6 +2,7 @@ package ch.tkb.certalert.collector;
 
 import ch.tkb.certalert.config.CertificateConfig;
 import ch.tkb.certalert.metrics.CertificateMetricsPublisher;
+import ch.tkb.certalert.model.CertificateIdentity;
 import ch.tkb.certalert.model.CertificateInfo;
 import ch.tkb.certalert.model.CertificateInfo.Status;
 import ch.tkb.certalert.utils.CertificateLoader;
@@ -59,7 +60,7 @@ public class CertificateCollector {
    */
   @Scheduled(fixedDelayString = "${certalert.check-interval}")
   public void collectCertificateData() {
-    Map<String, CertificateInfo> existing = indexByIdentity(certificateInfos.get());
+    Map<CertificateIdentity, CertificateInfo> existing = indexByIdentity(certificateInfos.get());
     List<CertificateInfo> collected = new ArrayList<>();
 
     // Process each configured certificate source
@@ -113,11 +114,11 @@ public class CertificateCollector {
       String name,
       String alias,
       X509Certificate cert,
-      Map<String, CertificateInfo> existing) {
+      Map<CertificateIdentity, CertificateInfo> existing) {
     try {
       var newInfo = buildInfoFromCert(path, type, name, alias, cert);
       Optional<CertificateInfo> oldInfo =
-          Optional.ofNullable(existing.get(identityKey(path, type, name, alias)));
+          Optional.ofNullable(existing.get(new CertificateIdentity(path, type, name, alias)));
 
       if (oldInfo.isPresent()) {
         var old = oldInfo.get();
@@ -149,11 +150,11 @@ public class CertificateCollector {
       String name,
       String alias,
       KeyStore ks,
-      Map<String, CertificateInfo> existing) {
+      Map<CertificateIdentity, CertificateInfo> existing) {
     try {
       var newInfo = buildInfo(path, type, name, alias, ks);
       Optional<CertificateInfo> oldInfo =
-          Optional.ofNullable(existing.get(identityKey(path, type, name, alias)));
+          Optional.ofNullable(existing.get(new CertificateIdentity(path, type, name, alias)));
 
       if (oldInfo.isPresent()) {
         var old = oldInfo.get();
@@ -232,7 +233,7 @@ public class CertificateCollector {
       String name,
       String alias,
       Exception e,
-      Map<String, CertificateInfo> existing) {
+      Map<CertificateIdentity, CertificateInfo> existing) {
     var errInfo =
         CertificateInfo.builder()
             .path(path)
@@ -244,7 +245,7 @@ public class CertificateCollector {
             .build();
     metricsPublisher.publishValidity(errInfo, false);
 
-    CertificateInfo oldInfo = existing.get(identityKey(path, type, name, alias));
+    CertificateInfo oldInfo = existing.get(new CertificateIdentity(path, type, name, alias));
     if (oldInfo != null) {
       if (!errInfo.equals(oldInfo)) {
         log.warn("Error for {}:{} changed {}", name, alias, e.getMessage());
@@ -259,20 +260,16 @@ public class CertificateCollector {
   private CertificateInfo handleLoadError(
       CertificateConfig.CertificateEntry entry,
       Exception e,
-      Map<String, CertificateInfo> existing) {
+      Map<CertificateIdentity, CertificateInfo> existing) {
     return handleAliasError(entry.path(), entry.type(), entry.name(), "unknown", e, existing);
   }
 
   /** Builds a lookup of previously collected certificates. */
-  private Map<String, CertificateInfo> indexByIdentity(List<CertificateInfo> infos) {
-    Map<String, CertificateInfo> index = new HashMap<>();
+  private Map<CertificateIdentity, CertificateInfo> indexByIdentity(List<CertificateInfo> infos) {
+    Map<CertificateIdentity, CertificateInfo> index = new HashMap<>();
     for (CertificateInfo info : infos) {
-      index.put(identityKey(info.getPath(), info.getType(), info.getName(), info.getAlias()), info);
+      index.put(CertificateIdentity.from(info), info);
     }
     return index;
-  }
-
-  private String identityKey(String path, String type, String name, String alias) {
-    return path + "|" + type + "|" + name + "|" + alias;
   }
 }
