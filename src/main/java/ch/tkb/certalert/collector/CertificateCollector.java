@@ -21,12 +21,15 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Collects certificate data and publishes metrics,
- * tracking state changes and pruning stale entries via a "seen" flag.
+ * tracking state changes and replacing stale entries with a fresh snapshot.
  */
 @Component
 public class CertificateCollector {
@@ -40,7 +43,7 @@ public class CertificateCollector {
   /**
    * Holds the last collected certificate information.
    */
-  private final List<CertificateInfo> certificateInfos = new ArrayList<>();
+  private final AtomicReference<List<CertificateInfo>> certificateInfos = new AtomicReference<>(List.of());
   private Instant lastUpdateTime;
 
   /**
@@ -59,10 +62,10 @@ public class CertificateCollector {
    */
   @Scheduled(fixedDelayString = "${certalert.check-interval}")
   public void collectCertificateData() {
-    // Mark all certs as unseen at the beginning of this cycle
-    certificateInfos.forEach(ci -> ci.setSeen(false));
+    Map<String, CertificateInfo> existing = indexByIdentity(certificateInfos.get());
+    List<CertificateInfo> collected = new ArrayList<>();
 
-    // // Process each configured certificate source
+    // Process each configured certificate source
     for (var entry : config.certificates()) {
       try {
         switch (entry.type().toLowerCase()) {
@@ -70,25 +73,24 @@ public class CertificateCollector {
             List<X509Certificate> certs = CertificateLoader.loadAll(entry.path());
             for (int i = 0; i < certs.size(); i++) {
               String alias = certs.size() == 1 ? "default" : "cert" + (i + 1);
-              processSingleCert(entry.path(), entry.type(), entry.name(), alias, certs.get(i));
+              collected.add(processSingleCert(entry.path(), entry.type(), entry.name(), alias, certs.get(i), existing));
             }
           }
           case "jceks", "jks", "dks", "p12", "pkcs11", "pkcs12" -> {
             String pw = Resolver.resolve(entry.password());
             KeyStore ks = KeystoreLoader.load(entry.type(), entry.path(), pw);
             for (String alias : Collections.list(ks.aliases())) {
-              processAlias(entry.path(), entry.type(), entry.name(), alias, ks);
+              collected.add(processAlias(entry.path(), entry.type(), entry.name(), alias, ks, existing));
             }
           }
           default -> throw new IllegalArgumentException("Unsupported certificate type: " + entry.type());
         }
       } catch (Exception e) {
-        handleLoadError(entry, e);
+        collected.add(handleLoadError(entry, e, existing));
       }
     }
 
-    // Prune stale certs that were not seen in this run
-    certificateInfos.removeIf(ci -> !ci.isSeen());
+    certificateInfos.set(List.copyOf(collected));
     lastUpdateTime = Instant.now();
   }
 
@@ -96,7 +98,7 @@ public class CertificateCollector {
    * Return a snapshot of current certificate info.
    */
   public List<CertificateInfo> getCertificateInfos() {
-    return List.copyOf(certificateInfos);
+    return certificateInfos.get();
   }
 
   /**
@@ -109,58 +111,62 @@ public class CertificateCollector {
   /**
    * Handle X.509 cert directly (non-keystore).
    */
-  private void processSingleCert(String path, String type, String name, String alias, X509Certificate cert) {
+  private CertificateInfo processSingleCert(
+      String path,
+      String type,
+      String name,
+      String alias,
+      X509Certificate cert,
+      Map<String, CertificateInfo> existing) {
     try {
       var newInfo = buildInfoFromCert(path, type, name, alias, cert);
-      Optional<CertificateInfo> existing = certificateInfos.stream()
-          .filter(ci -> ci.getName().equals(name) && ci.getAlias().equals(alias))
-          .peek(ci -> ci.setSeen(true))
-          .findFirst();
+      Optional<CertificateInfo> oldInfo = Optional.ofNullable(existing.get(identityKey(name, alias)));
 
-      if (existing.isPresent()) {
-        var old = existing.get();
+      if (oldInfo.isPresent()) {
+        var old = oldInfo.get();
         if (!newInfo.equals(old)) {
           log.info("Certificate {}:{} changed {} → {}", name, alias, old.getStatus(), newInfo.getStatus());
-          certificateInfos.set(certificateInfos.indexOf(old), newInfo);
           publishMetrics(newInfo);
         }
-        return;
+        return newInfo;
       }
 
       log.debug("New certificate {}:{} expires {}", name, alias, formatter.format(newInfo.getNotAfter()));
-      certificateInfos.add(newInfo);
       publishMetrics(newInfo);
+      return newInfo;
     } catch (Exception e) {
-      handleAliasError(path, type, name, alias, e);
+      return handleAliasError(path, type, name, alias, e, existing);
     }
   }
 
   /**
    * Handle alias inside a keystore.
    */
-  private void processAlias(String path, String type, String name, String alias, KeyStore ks) {
+  private CertificateInfo processAlias(
+      String path,
+      String type,
+      String name,
+      String alias,
+      KeyStore ks,
+      Map<String, CertificateInfo> existing) {
     try {
       var newInfo = buildInfo(path, type, name, alias, ks);
-      Optional<CertificateInfo> existing = certificateInfos.stream()
-          .filter(ci -> ci.getName().equals(name) && ci.getAlias().equals(alias))
-          .peek(ci -> ci.setSeen(true))
-          .findFirst();
+      Optional<CertificateInfo> oldInfo = Optional.ofNullable(existing.get(identityKey(name, alias)));
 
-      if (existing.isPresent()) {
-        var old = existing.get();
+      if (oldInfo.isPresent()) {
+        var old = oldInfo.get();
         if (!newInfo.equals(old)) {
           log.info("Certificate {}:{} changed {} → {}", name, alias, old.getStatus(), newInfo.getStatus());
-          certificateInfos.set(certificateInfos.indexOf(old), newInfo);
           publishMetrics(newInfo);
         }
-        return;
+        return newInfo;
       }
 
       log.debug("New certificate {}:{} expires {}", name, alias, formatter.format(newInfo.getNotAfter()));
-      certificateInfos.add(newInfo);
       publishMetrics(newInfo);
+      return newInfo;
     } catch (Exception e) {
-      handleAliasError(path, type, name, alias, e);
+      return handleAliasError(path, type, name, alias, e, existing);
     }
   }
 
@@ -219,7 +225,13 @@ public class CertificateCollector {
   /**
    * Handles alias-level load/parse errors.
    */
-  private void handleAliasError(String path, String type, String name, String alias, Exception e) {
+  private CertificateInfo handleAliasError(
+      String path,
+      String type,
+      String name,
+      String alias,
+      Exception e,
+      Map<String, CertificateInfo> existing) {
     metricsPublisher.publishValidity(path, name, alias, false);
     var errInfo = CertificateInfo.builder()
         .path(path)
@@ -230,36 +242,39 @@ public class CertificateCollector {
         .status(Status.INVALID)
         .build();
 
-    int idx = findCertIndex(name, alias);
-    if (idx >= 0) {
-      certificateInfos.get(idx).setSeen(true);
-      if (!errInfo.equals(certificateInfos.get(idx))) {
+    CertificateInfo oldInfo = existing.get(identityKey(name, alias));
+    if (oldInfo != null) {
+      if (!errInfo.equals(oldInfo)) {
         log.warn("Error for {}:{} changed {}", name, alias, e.getMessage());
-        certificateInfos.set(idx, errInfo);
       }
-      return;
+      return errInfo;
     }
     log.error("Error loading {}:{} {}", name, alias, e.getMessage());
-    certificateInfos.add(errInfo);
+    return errInfo;
   }
 
   /**
    * Handles total keystore load failure.
    */
-  private void handleLoadError(CertificateConfig.CertificateEntry entry, Exception e) {
-    handleAliasError(entry.path(), entry.type(), entry.name(), "unknown", e);
+  private CertificateInfo handleLoadError(
+      CertificateConfig.CertificateEntry entry,
+      Exception e,
+      Map<String, CertificateInfo> existing) {
+    return handleAliasError(entry.path(), entry.type(), entry.name(), "unknown", e, existing);
   }
 
   /**
-   * Finds index of cert by name and alias.
+   * Builds a lookup of previously collected certificates.
    */
-  private int findCertIndex(String name, String alias) {
-    for (int i = 0; i < certificateInfos.size(); i++) {
-      var ci = certificateInfos.get(i);
-      if (ci.getName().equals(name) && ci.getAlias().equals(alias)) {
-        return i;
-      }
+  private Map<String, CertificateInfo> indexByIdentity(List<CertificateInfo> infos) {
+    Map<String, CertificateInfo> index = new HashMap<>();
+    for (CertificateInfo info : infos) {
+      index.put(identityKey(info.getName(), info.getAlias()), info);
     }
-    return -1;
+    return index;
+  }
+
+  private String identityKey(String name, String alias) {
+    return name + "|" + alias;
   }
 }
