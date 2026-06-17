@@ -44,7 +44,7 @@ public class CertificateCollector {
   private final AtomicReference<List<CertificateInfo>> certificateInfos =
       new AtomicReference<>(List.of());
 
-  private Instant lastUpdateTime;
+  private final AtomicReference<Instant> lastUpdateTime = new AtomicReference<>();
 
   /** Construct a CertificateCollector with config and metrics publisher. */
   public CertificateCollector(
@@ -94,7 +94,7 @@ public class CertificateCollector {
 
     certificateInfos.set(List.copyOf(collected));
     metricsPublisher.prune(collected);
-    lastUpdateTime = Instant.now();
+    lastUpdateTime.set(Instant.now());
   }
 
   /** Return a snapshot of current certificate info. */
@@ -104,7 +104,7 @@ public class CertificateCollector {
 
   /** Return the timestamp of the last scan. */
   public Instant getLastUpdateTime() {
-    return lastUpdateTime;
+    return lastUpdateTime.get();
   }
 
   /** Handle X.509 cert directly (non-keystore). */
