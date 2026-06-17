@@ -1,13 +1,12 @@
 package ch.tkb.certalert.utils;
 
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.nio.file.Path;
 import java.security.cert.X509Certificate;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 class CertificateLoaderTest {
 
@@ -41,7 +40,8 @@ class CertificateLoaderTest {
   @DisplayName("CertificateLoader.loadAll throws for missing file")
   void testMissingFile() {
     String path = BASE_PATH + "/crt/missing.crt";
-    Exception ex = assertThrows(IllegalArgumentException.class, () -> CertificateLoader.loadAll(path));
+    Exception ex =
+        assertThrows(IllegalArgumentException.class, () -> CertificateLoader.loadAll(path));
     assertTrue(ex.getMessage().contains("does not exist"));
   }
 
@@ -53,7 +53,9 @@ class CertificateLoaderTest {
       java.nio.file.Files.writeString(emptyFile, ""); // create empty file
     }
 
-    Exception ex = assertThrows(IllegalArgumentException.class, () -> CertificateLoader.loadAll(emptyFile.toString()));
+    Exception ex =
+        assertThrows(
+            IllegalArgumentException.class, () -> CertificateLoader.loadAll(emptyFile.toString()));
     assertTrue(ex.getMessage().contains("No certificates found"));
   }
 }

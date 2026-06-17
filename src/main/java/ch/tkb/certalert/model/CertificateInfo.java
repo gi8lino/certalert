@@ -1,13 +1,10 @@
 package ch.tkb.certalert.model;
 
+import java.time.Instant;
 import lombok.Builder;
 import lombok.Value;
 
-import java.time.Instant;
-
-/**
- * Holds certificate metadata and its current validation status.
- */
+/** Holds certificate metadata and its current validation status. */
 @Value
 @Builder
 public class CertificateInfo {
@@ -22,6 +19,8 @@ public class CertificateInfo {
   Status status;
 
   public enum Status {
-    VALID, EXPIRED, INVALID
+    VALID,
+    EXPIRED,
+    INVALID
   }
 }

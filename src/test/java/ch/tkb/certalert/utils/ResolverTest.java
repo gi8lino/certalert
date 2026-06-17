@@ -1,20 +1,17 @@
 package ch.tkb.certalert.utils;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import org.junit.jupiter.api.DisplayName;
-
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.io.IOException;
-
-import static org.junit.jupiter.api.Assertions.*;
-
 class ResolverTest {
 
-  @TempDir
-  Path tempDir;
+  @TempDir Path tempDir;
 
   @Test
   @DisplayName("Resolver.resolve returns null for missing environment variable")
@@ -51,7 +48,9 @@ class ResolverTest {
   @DisplayName("Resolver.resolve resolves JSON file path")
   void testJsonResolution() throws IOException {
     Path file = tempDir.resolve("test.json");
-    Files.writeString(file, """
+    Files.writeString(
+        file,
+        """
         {
           "database": {
             "host": "localhost",
@@ -69,7 +68,9 @@ class ResolverTest {
   @DisplayName("Resolver.resolve resolves YAML file path")
   void testYamlResolution() throws IOException {
     Path file = tempDir.resolve("test.yaml");
-    Files.writeString(file, """
+    Files.writeString(
+        file,
+        """
         server:
           port: 8080
         servers:
@@ -85,7 +86,9 @@ class ResolverTest {
   @DisplayName("Resolver.resolve resolves INI file path")
   void testIniResolution() throws IOException {
     Path file = tempDir.resolve("test.ini");
-    Files.writeString(file, """
+    Files.writeString(
+        file,
+        """
         [database]
         user = admin
         password = secret
@@ -98,7 +101,9 @@ class ResolverTest {
   @DisplayName("Resolver.resolve resolves properties file path")
   void testPropertiesResolution() throws IOException {
     Path file = tempDir.resolve("test.properties");
-    Files.writeString(file, """
+    Files.writeString(
+        file,
+        """
         foo=bar
         nested.value=123
         """);
@@ -120,7 +125,9 @@ class ResolverTest {
   @DisplayName("Resolver.resolve resolves TOML file path with dotted keys")
   void testTomlResolution() throws IOException {
     Path file = tempDir.resolve("test.toml");
-    Files.writeString(file, """
+    Files.writeString(
+        file,
+        """
         [database]
         host = "localhost"
         port = 3306
@@ -140,7 +147,9 @@ class ResolverTest {
   @DisplayName("Resolver.resolve resolves TOML file path with minimal dotted keys")
   void testTomlResolutionMinimal() throws IOException {
     Path file = tempDir.resolve("test.toml");
-    Files.writeString(file, """
+    Files.writeString(
+        file,
+        """
         [database]
         host = "localhost"
         """);
@@ -152,7 +161,8 @@ class ResolverTest {
   @Test
   @DisplayName("Resolver.resolve throws exception for missing file")
   void testMissingFileThrows() {
-    RuntimeException ex = assertThrows(RuntimeException.class, () -> Resolver.resolve("file:/nonexistent/file.txt"));
+    RuntimeException ex =
+        assertThrows(RuntimeException.class, () -> Resolver.resolve("file:/nonexistent/file.txt"));
     assertTrue(ex.getMessage().contains("Failed to read"));
   }
 
@@ -161,8 +171,9 @@ class ResolverTest {
   void testMissingKeyThrows() throws IOException {
     Path file = tempDir.resolve("test.properties");
     Files.writeString(file, "x=1");
-    RuntimeException ex = assertThrows(RuntimeException.class,
-        () -> Resolver.resolve("properties:" + file + "//missing.key"));
+    RuntimeException ex =
+        assertThrows(
+            RuntimeException.class, () -> Resolver.resolve("properties:" + file + "//missing.key"));
     assertTrue(ex.getMessage().contains("Key not found"));
   }
 
@@ -176,7 +187,9 @@ class ResolverTest {
   @DisplayName("Resolver.resolve returns full JSON document when no key path")
   void testJsonNoKeyPath() throws IOException {
     Path file = tempDir.resolve("noKey.json");
-    Files.writeString(file, """
+    Files.writeString(
+        file,
+        """
         {
           "foo": 123,
           "bar": "baz"
@@ -191,7 +204,9 @@ class ResolverTest {
   @DisplayName("Resolver.resolve returns full YAML document when no key path")
   void testYamlNoKeyPath() throws IOException {
     Path file = tempDir.resolve("noKey.yaml");
-    Files.writeString(file, """
+    Files.writeString(
+        file,
+        """
         foo: 123
         bar: baz
         """);
@@ -212,16 +227,20 @@ class ResolverTest {
   @Test
   @DisplayName("Resolver.resolve throws for properties with missing key format")
   void testPropertiesInvalidFormat() {
-    IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-        () -> Resolver.resolve("properties:/some/file.properties"));
+    IllegalArgumentException ex =
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> Resolver.resolve("properties:/some/file.properties"));
     assertTrue(ex.getMessage().contains("format"));
   }
 
   @Test
   @DisplayName("Resolver.resolve throws for INI with missing section.key format")
   void testIniInvalidFormat() {
-    IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-        () -> Resolver.resolve("ini:/some/file.ini//invalidKey"));
+    IllegalArgumentException ex =
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> Resolver.resolve("ini:/some/file.ini//invalidKey"));
     assertTrue(ex.getMessage().contains("format"));
   }
 
@@ -229,16 +248,21 @@ class ResolverTest {
   @DisplayName("Resolver.resolve throws for out-of-bounds TOML index")
   void testTomlInvalidIndex() throws IOException {
     Path file = tempDir.resolve("badIndex.toml");
-    Files.writeString(file, """
+    Files.writeString(
+        file,
+        """
         [[items]]
         name = "a"
         """);
 
-    RuntimeException ex = assertThrows(RuntimeException.class,
-        () -> Resolver.resolve("toml:" + file + "//items.5.name"));
+    RuntimeException ex =
+        assertThrows(
+            RuntimeException.class, () -> Resolver.resolve("toml:" + file + "//items.5.name"));
 
-    assertTrue(ex.getMessage().contains("Index out of bounds")
-        || (ex.getCause() != null && ex.getCause().getMessage().contains("Index out of bounds")),
+    assertTrue(
+        ex.getMessage().contains("Index out of bounds")
+            || (ex.getCause() != null
+                && ex.getCause().getMessage().contains("Index out of bounds")),
         "Expected TOML path segment error, got: " + ex.getMessage());
   }
 
@@ -246,16 +270,20 @@ class ResolverTest {
   @DisplayName("Resolver.resolve throws for missing TOML key")
   void testTomlMissingKey() throws IOException {
     Path file = tempDir.resolve("missingKey.toml");
-    Files.writeString(file, """
+    Files.writeString(
+        file,
+        """
         [database]
         host = "localhost"
         """);
 
-    RuntimeException ex = assertThrows(RuntimeException.class,
-        () -> Resolver.resolve("toml:" + file + "//database.password"));
+    RuntimeException ex =
+        assertThrows(
+            RuntimeException.class, () -> Resolver.resolve("toml:" + file + "//database.password"));
 
-    assertTrue(ex.getMessage().contains("Key not found")
-        || (ex.getCause() != null && ex.getCause().getMessage().contains("Key not found")),
+    assertTrue(
+        ex.getMessage().contains("Key not found")
+            || (ex.getCause() != null && ex.getCause().getMessage().contains("Key not found")),
         "Expected missing key message, got: " + ex.getMessage());
   }
 }

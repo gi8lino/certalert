@@ -3,37 +3,33 @@ package ch.tkb.certalert.utils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Properties;
 import org.ini4j.Ini;
 import org.tomlj.Toml;
 import org.tomlj.TomlParseResult;
 import org.tomlj.TomlTable;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Properties;
-
 /**
- * Utility for resolving dynamic values from environment variables, plain files,
- * or structured configuration formats such as JSON, YAML, INI, Properties, and
- * TOML.
+ * Utility for resolving dynamic values from environment variables, plain files, or structured
+ * configuration formats such as JSON, YAML, INI, Properties, and TOML.
  *
- * <p>
- * Supported formats:
- * </p>
+ * <p>Supported formats:
+ *
  * <ul>
- * <li>{@code env:VAR_NAME}</li>
- * <li>{@code file:/path/to/file.txt}</li>
- * <li>{@code file:/path/to/file.txt//key}</li>
- * <li>{@code json:/path/to/file.json//path.to.value}</li>
- * <li>{@code yaml:/path/to/file.yaml//path.to.value}</li>
- * <li>{@code ini:/path/to/file.ini//Section.Key}</li>
- * <li>{@code properties:/path/to/file.properties//key}</li>
- * <li>{@code toml:/path/to/file.toml//servers.0.host}</li>
+ *   <li>{@code env:VAR_NAME}
+ *   <li>{@code file:/path/to/file.txt}
+ *   <li>{@code file:/path/to/file.txt//key}
+ *   <li>{@code json:/path/to/file.json//path.to.value}
+ *   <li>{@code yaml:/path/to/file.yaml//path.to.value}
+ *   <li>{@code ini:/path/to/file.ini//Section.Key}
+ *   <li>{@code properties:/path/to/file.properties//key}
+ *   <li>{@code toml:/path/to/file.toml//servers.0.host}
  * </ul>
  */
 public final class Resolver {
@@ -45,10 +41,7 @@ public final class Resolver {
     // Utility class; prevent instantiation
   }
 
-  /**
-   * Resolves a value from an environment variable, file, or structured config
-   * format.
-   */
+  /** Resolves a value from an environment variable, file, or structured config format. */
   public static String resolve(String rawValue) {
     if (rawValue == null) {
       return null;
@@ -73,16 +66,12 @@ public final class Resolver {
     }
   }
 
-  /**
-   * Resolves a value from an environment variable.
-   */
+  /** Resolves a value from an environment variable. */
   private static String resolveEnv(String envVar) {
     return System.getenv(envVar);
   }
 
-  /**
-   * Resolves a value from a plain file or key-value file.
-   */
+  /** Resolves a value from a plain file or key-value file. */
   private static String resolveFile(String fileSpec) {
     String filePath;
     String key = null;
@@ -108,23 +97,17 @@ public final class Resolver {
     }
   }
 
-  /**
-   * Resolves a value from a JSON file using dot notation.
-   */
+  /** Resolves a value from a JSON file using dot notation. */
   private static String resolveJson(String fileSpec) {
     return extractJsonOrYaml(fileSpec, jsonMapper);
   }
 
-  /**
-   * Resolves a value from a YAML file using dot notation.
-   */
+  /** Resolves a value from a YAML file using dot notation. */
   private static String resolveYaml(String fileSpec) {
     return extractJsonOrYaml(fileSpec, yamlMapper);
   }
 
-  /**
-   * Extracts a value from a JSON or YAML file using a dot-separated path.
-   */
+  /** Extracts a value from a JSON or YAML file using a dot-separated path. */
   private static String extractJsonOrYaml(String fileSpec, ObjectMapper mapper) {
     String path, keyPath = null;
     int sepIndex = fileSpec.indexOf("//");
@@ -147,9 +130,7 @@ public final class Resolver {
     }
   }
 
-  /**
-   * Navigates a JsonNode tree using dot-separated notation.
-   */
+  /** Navigates a JsonNode tree using dot-separated notation. */
   private static String resolveJsonPath(JsonNode node, String path) {
     String[] parts = path.split("\\.");
     JsonNode current = node;
@@ -166,13 +147,12 @@ public final class Resolver {
     return current.isValueNode() ? current.asText() : current.toString();
   }
 
-  /**
-   * Resolves a value from an INI file using Section.Key syntax.
-   */
+  /** Resolves a value from an INI file using Section.Key syntax. */
   private static String resolveIni(String fileSpec) {
     int sepIndex = fileSpec.indexOf("//");
     if (sepIndex < 0) {
-      throw new IllegalArgumentException("INI path must be in the format ini:/file.ini//Section.Key");
+      throw new IllegalArgumentException(
+          "INI path must be in the format ini:/file.ini//Section.Key");
     }
 
     String filePath = fileSpec.substring(0, sepIndex);
@@ -196,13 +176,12 @@ public final class Resolver {
     }
   }
 
-  /**
-   * Resolves a value from a .properties file using key lookup.
-   */
+  /** Resolves a value from a .properties file using key lookup. */
   private static String resolveProperties(String fileSpec) {
     int sepIndex = fileSpec.indexOf("//");
     if (sepIndex < 0) {
-      throw new IllegalArgumentException("Properties path must be in the format properties:/file.properties//key");
+      throw new IllegalArgumentException(
+          "Properties path must be in the format properties:/file.properties//key");
     }
 
     String filePath = fileSpec.substring(0, sepIndex);
@@ -221,13 +200,12 @@ public final class Resolver {
     }
   }
 
-  /**
-   * Resolves a value from a TOML file using dot-separated key path.
-   */
+  /** Resolves a value from a TOML file using dot-separated key path. */
   private static String resolveToml(String fileSpec) {
     int sepIndex = fileSpec.indexOf("//");
     if (sepIndex < 0) {
-      throw new IllegalArgumentException("TOML path must be in the format toml:/file.toml//key.path");
+      throw new IllegalArgumentException(
+          "TOML path must be in the format toml:/file.toml//key.path");
     }
 
     String filePath = fileSpec.substring(0, sepIndex);
@@ -245,14 +223,12 @@ public final class Resolver {
       // Forward our specific exception as-is
       throw e;
     } catch (Exception e) {
-      throw new RuntimeException("Failed to read TOML file: " + filePath + " (" + e.getMessage() + ")", e);
+      throw new RuntimeException(
+          "Failed to read TOML file: " + filePath + " (" + e.getMessage() + ")", e);
     }
   }
 
-  /**
-   * Navigates a TomlParseResult tree using dot-separated notation (e.g.,
-   * servers.0.host).
-   */
+  /** Navigates a TomlParseResult tree using dot-separated notation (e.g., servers.0.host). */
   private static Object resolveTomlPath(Object root, String path) {
     String[] parts = path.split("\\.");
     Object current = root;
@@ -272,8 +248,12 @@ public final class Resolver {
         }
         current = array.get(idx);
       } else {
-        throw new RuntimeException("Unsupported TOML path segment or structure: " + part + " (type="
-            + current.getClass().getSimpleName() + ")");
+        throw new RuntimeException(
+            "Unsupported TOML path segment or structure: "
+                + part
+                + " (type="
+                + current.getClass().getSimpleName()
+                + ")");
       }
 
       if (current == null) {
@@ -284,9 +264,7 @@ public final class Resolver {
     return current;
   }
 
-  /**
-   * Reads a key from a key=value formatted plain text file.
-   */
+  /** Reads a key from a key=value formatted plain text file. */
   private static String readKeyFromFile(Path path, String key) throws IOException {
     try (BufferedReader reader = Files.newBufferedReader(path)) {
       String line;

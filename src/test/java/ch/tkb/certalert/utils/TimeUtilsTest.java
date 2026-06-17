@@ -1,22 +1,21 @@
 package ch.tkb.certalert.utils;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.TimeZone;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Unit tests for {@link TimeUtils}.
- * <p>
- * Tests are run with UTC default timezone for consistent results.
+ *
+ * <p>Tests are run with UTC default timezone for consistent results.
  */
 class TimeUtilsTest {
 
@@ -61,12 +60,7 @@ class TimeUtilsTest {
   @DisplayName("formatPeriod computes correct short format")
   void formatPeriod_short() {
     LocalDateTime start = LocalDateTime.of(2025, 1, 1, 0, 0);
-    LocalDateTime end = start
-        .plusYears(1)
-        .plusMonths(2)
-        .plusDays(3)
-        .plusHours(4)
-        .plusMinutes(5);
+    LocalDateTime end = start.plusYears(1).plusMonths(2).plusDays(3).plusHours(4).plusMinutes(5);
 
     Instant startInstant = start.atZone(ZoneId.of("UTC")).toInstant();
     Instant endInstant = end.atZone(ZoneId.of("UTC")).toInstant();
@@ -79,12 +73,7 @@ class TimeUtilsTest {
   @DisplayName("formatPeriod computes correct long format")
   void formatPeriod_long() {
     LocalDateTime start = LocalDateTime.of(2025, 1, 1, 0, 0);
-    LocalDateTime end = start
-        .plusYears(1)
-        .plusMonths(1)
-        .plusDays(1)
-        .plusHours(1)
-        .plusMinutes(1);
+    LocalDateTime end = start.plusYears(1).plusMonths(1).plusDays(1).plusHours(1).plusMinutes(1);
 
     Instant startInstant = start.atZone(ZoneId.of("UTC")).toInstant();
     Instant endInstant = end.atZone(ZoneId.of("UTC")).toInstant();

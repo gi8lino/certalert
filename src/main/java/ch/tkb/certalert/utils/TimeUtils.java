@@ -4,25 +4,22 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.Period;
-import java.time.temporal.ChronoUnit;
 import java.time.ZoneId;
-
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Utility class for formatting durations between two points in time
- * into human-readable strings.
- * <p>
- * Supports both short (e.g. "1y, 2mo, 5d") and long formats
- * (e.g. "1 year, 2 months, 5 days"), with comma-separated units.
- * </p>
+ * Utility class for formatting durations between two points in time into human-readable strings.
+ *
+ * <p>Supports both short (e.g. "1y, 2mo, 5d") and long formats (e.g. "1 year, 2 months, 5 days"),
+ * with comma-separated units.
  */
 public class TimeUtils {
 
   /**
-   * Formats the difference between two Instants in short form.
-   * Returns null if either Instant is null or end is before start.
+   * Formats the difference between two Instants in short form. Returns null if either Instant is
+   * null or end is before start.
    */
   public static String formatPeriod(Instant start, Instant end) {
     if (start == null || end == null || end.isBefore(start)) {
@@ -34,11 +31,10 @@ public class TimeUtils {
   /**
    * Formats the difference between two Instants.
    *
-   * @param start      the start Instant (may be null)
-   * @param end        the end Instant (may be null)
+   * @param start the start Instant (may be null)
+   * @param end the end Instant (may be null)
    * @param longFormat true for full unit names, false for abbreviated
-   * @return formatted string or null if end is before start or any Instant is
-   *         null
+   * @return formatted string or null if end is before start or any Instant is null
    */
   public static String formatPeriod(Instant start, Instant end, boolean longFormat) {
     if (start == null || end == null || end.isBefore(start)) {
@@ -82,9 +78,7 @@ public class TimeUtils {
       // Include this unit if non-zero, or always include minutes if no other parts
       // yet
       if (qty > 0 || (u == Unit.MINUTES && parts.isEmpty())) {
-        String label = longFormat
-            ? (qty == 1 ? u.singular : u.plural)
-            : u.shortLabel;
+        String label = longFormat ? (qty == 1 ? u.singular : u.plural) : u.shortLabel;
         parts.add(qty + (longFormat ? label : u.shortLabel));
       }
     }
@@ -94,8 +88,7 @@ public class TimeUtils {
   }
 
   /**
-   * Formats a Duration from now to now + duration in short form.
-   * Returns null if duration is null.
+   * Formats a Duration from now to now + duration in short form. Returns null if duration is null.
    */
   public static String formatDuration(Duration duration) {
     return formatDuration(duration, false);
@@ -104,7 +97,7 @@ public class TimeUtils {
   /**
    * Formats a Duration from now to now + duration.
    *
-   * @param duration   the Duration to format (may be null)
+   * @param duration the Duration to format (may be null)
    * @param longFormat true for full unit names, false for abbreviated units
    * @return formatted duration string or null if duration is null
    */

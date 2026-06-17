@@ -1,20 +1,18 @@
 package ch.tkb.certalert.utils;
 
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.FileOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStore;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class KeystoreLoaderTest {
 
-  @TempDir
-  Path tempDir;
+  @TempDir Path tempDir;
 
   private static final String PASSWORD = "testpass";
 
@@ -54,7 +52,8 @@ class KeystoreLoaderTest {
   @DisplayName("KeystoreLoader.load throws if file doesn't exist")
   void testFileNotFound() {
     String nonexistent = tempDir.resolve("missing.jks").toString();
-    Exception ex = assertThrows(Exception.class, () -> KeystoreLoader.load("jks", nonexistent, PASSWORD));
+    Exception ex =
+        assertThrows(Exception.class, () -> KeystoreLoader.load("jks", nonexistent, PASSWORD));
     assertTrue(ex instanceof java.io.FileNotFoundException);
   }
 
@@ -64,8 +63,10 @@ class KeystoreLoaderTest {
     Path file = tempDir.resolve("dummy.ks");
     Files.writeString(file, "not-a-keystore");
 
-    Exception ex = assertThrows(IllegalArgumentException.class,
-        () -> KeystoreLoader.load("fake", file.toString(), "irrelevant"));
+    Exception ex =
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> KeystoreLoader.load("fake", file.toString(), "irrelevant"));
     assertTrue(ex.getMessage().contains("Unsupported keystore type"));
   }
 
@@ -80,8 +81,11 @@ class KeystoreLoaderTest {
       ks.store(fos, PASSWORD.toCharArray());
     }
 
-    Exception ex = assertThrows(Exception.class, () -> KeystoreLoader.load("jks", file.toString(), "wrongpass"));
-    assertTrue(ex.getMessage().toLowerCase().contains("password") || ex instanceof java.io.IOException);
+    Exception ex =
+        assertThrows(
+            Exception.class, () -> KeystoreLoader.load("jks", file.toString(), "wrongpass"));
+    assertTrue(
+        ex.getMessage().toLowerCase().contains("password") || ex instanceof java.io.IOException);
   }
 
   @Test
