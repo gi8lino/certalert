@@ -153,11 +153,41 @@
         bottom: 0;
         z-index: 1;
       }
+
+      .toolbar {
+        width: 80%;
+        margin: 0 auto 10px auto;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .toolbar input,
+      .toolbar select {
+        padding: 6px 8px;
+        border: 1px solid #ccc;
+        font: inherit;
+      }
+
+      .toolbar input {
+        flex: 1;
+      }
     </style>
   </head>
 
   <body>
     <main>
+      <div class="toolbar">
+        <input id="tableSearch" type="search" placeholder="Search certificates" />
+        <select id="statusFilter">
+          <option value="">All statuses</option>
+          <option value="status-ok">OK</option>
+          <option value="status-warn">Warning</option>
+          <option value="status-crit">Critical</option>
+          <option value="status-error">Error</option>
+        </select>
+      </div>
+
       <table id="certTable">
         <thead>
           <tr>
@@ -247,8 +277,30 @@
         for (const row of rows) table.tBodies[0].appendChild(row);
       }
 
+      function filterTable() {
+        const query = document
+          .getElementById("tableSearch")
+          .value.trim()
+          .toLowerCase();
+        const status = document.getElementById("statusFilter").value;
+        const table = document.getElementById("certTable");
+
+        for (const row of table.tBodies[0].rows) {
+          const matchesQuery =
+            query === "" || row.innerText.toLowerCase().includes(query);
+          const matchesStatus = status === "" || row.classList.contains(status);
+          row.hidden = !matchesQuery || !matchesStatus;
+        }
+      }
+
       document.addEventListener("DOMContentLoaded", function () {
         sortTable(1); // Default sort by name
+        document
+          .getElementById("tableSearch")
+          .addEventListener("input", filterTable);
+        document
+          .getElementById("statusFilter")
+          .addEventListener("change", filterTable);
       });
     </script>
   </body>
