@@ -3,9 +3,6 @@ package ch.tkb.certalert.utils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import org.tomlj.Toml;
-import org.tomlj.TomlParseResult;
-import org.tomlj.TomlTable;
 import org.junit.jupiter.api.DisplayName;
 
 import java.nio.file.Files;
@@ -20,15 +17,10 @@ class ResolverTest {
   Path tempDir;
 
   @Test
-  @DisplayName("Resolver.resolve returns null for invalid raw value")
-  void testEnvVariable() {
-    // Test will pass only if JAVA_HOME is set — not always guaranteed.
-    String javaHome = Resolver.resolve("env:JAVA_HOME");
-    if (javaHome == null) {
-      System.out.println("JAVA_HOME not set, skipping testEnvVariable.");
-      return;
-    }
-    assertNotNull(javaHome);
+  @DisplayName("Resolver.resolve returns null for missing environment variable")
+  void testMissingEnvVariable() {
+    String resolved = Resolver.resolve("env:CERTALERT_TEST_ENV_VALUE_THAT_SHOULD_NOT_EXIST");
+    assertNull(resolved);
   }
 
   @Test
@@ -140,28 +132,6 @@ class ResolverTest {
         host = "a2"
         """);
 
-    String raw = Files.readString(file);
-    System.out.println("=== TOML CONTENT ===");
-    System.out.println(raw);
-
-    TomlParseResult result = Toml.parse(file);
-    System.out.println("=== dottedKeySet ===");
-    System.out.println(result.dottedKeySet());
-    System.out.println("=== servers raw ===");
-    Object servers = result.get("servers");
-    System.out.println(servers);
-    System.out.println("=== servers type ===");
-    System.out.println(servers.getClass());
-
-    if (servers instanceof java.util.List<?> list) {
-      Object item0 = list.get(0);
-      System.out.println("servers[0]: " + item0);
-      System.out.println("type: " + item0.getClass());
-      if (item0 instanceof TomlTable table) {
-        System.out.println("servers[0].host: " + table.getString("host"));
-      }
-    }
-
     assertEquals("localhost", Resolver.resolve("toml:" + file + "//database.host"));
     assertEquals("a1", Resolver.resolve("toml:" + file + "//servers.0.host"));
   }
@@ -174,9 +144,6 @@ class ResolverTest {
         [database]
         host = "localhost"
         """);
-
-    System.out.println("=== TOML content ===");
-    System.out.println(Files.readString(file));
 
     String resolved = Resolver.resolve("toml:" + file + "//database.host");
     assertEquals("localhost", resolved);
@@ -234,8 +201,8 @@ class ResolverTest {
   }
 
   @Test
-  @DisplayName("Resolver.resolve returns full TOML document when no key path")
-  void testTomlNoKeyPath() throws IOException {
+  @DisplayName("Resolver.resolve resolves TOML scalar values")
+  void testTomlScalarValue() throws IOException {
     Path file = tempDir.resolve("noKey.toml");
     Files.writeString(file, "foo = 123\nbar = 'baz'\n");
     String resolved = Resolver.resolve("toml:" + file + "//foo");
