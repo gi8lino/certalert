@@ -199,8 +199,16 @@ public class CertificateCollector {
 
   /** Publishes metrics for a certificate. */
   private void publishMetrics(CertificateInfo info) {
-    metricsPublisher.publishExpiration(info);
-    metricsPublisher.publishValidity(info, info.getStatus() == Status.VALID);
+    try {
+      metricsPublisher.publishExpiration(info);
+      metricsPublisher.publishValidity(info, info.getStatus() == Status.VALID);
+    } catch (RuntimeException e) {
+      log.warn(
+          "Failed to publish metrics for {}:{}: {}",
+          info.getName(),
+          info.getAlias(),
+          e.getMessage());
+    }
   }
 
   /** Handles alias-level load/parse errors. */
@@ -220,7 +228,7 @@ public class CertificateCollector {
             .subject(e.getMessage())
             .status(Status.INVALID)
             .build();
-    metricsPublisher.publishValidity(errInfo, false);
+    publishMetrics(errInfo);
 
     CertificateInfo oldInfo = existing.get(new CertificateIdentity(path, type, name, alias));
     if (oldInfo != null) {
