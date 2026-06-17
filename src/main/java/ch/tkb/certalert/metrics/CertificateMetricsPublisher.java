@@ -6,6 +6,7 @@ import com.google.common.util.concurrent.AtomicDouble;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Set;
@@ -22,6 +23,10 @@ public class CertificateMetricsPublisher {
 
   /** Holds registered expiration metrics keyed by certificate identity. */
   private final ConcurrentMap<CertificateIdentity, MetricState> certExpirationMetrics =
+      new ConcurrentHashMap<>();
+
+  /** Holds registered remaining-days metrics keyed by certificate identity. */
+  private final ConcurrentMap<CertificateIdentity, MetricState> certDaysRemainingMetrics =
       new ConcurrentHashMap<>();
 
   /** Holds registered validity metrics keyed by certificate identity. */
@@ -41,6 +46,7 @@ public class CertificateMetricsPublisher {
     }
 
     long epochSeconds = expiry.getEpochSecond();
+    double daysRemaining = Duration.between(Instant.now(), expiry).toSeconds() / 86_400.0;
     CertificateIdentity key = CertificateIdentity.from(certInfo);
 
     certExpirationMetrics
@@ -62,6 +68,25 @@ public class CertificateMetricsPublisher {
             })
         .holder()
         .set(epochSeconds);
+
+    certDaysRemainingMetrics
+        .computeIfAbsent(
+            key,
+            metricKey -> {
+              AtomicDouble holder = new AtomicDouble(daysRemaining);
+              Gauge gauge =
+                  Gauge.builder("certalert_certificate_days_remaining", holder, AtomicDouble::get)
+                      .description("Days until certificate expiration")
+                      .tags(
+                          "certificate_name", certInfo.getName(),
+                          "alias", certInfo.getAlias(),
+                          "path", certInfo.getPath(),
+                          "type", certInfo.getType())
+                      .register(meterRegistry);
+              return new MetricState(holder, gauge);
+            })
+        .holder()
+        .set(daysRemaining);
   }
 
   /** Publishes or updates the validity metric for a given certificate. */
@@ -101,6 +126,7 @@ public class CertificateMetricsPublisher {
 
     removeInactive(certValidityMetrics, activeKeys);
     removeInactive(certExpirationMetrics, expiringKeys);
+    removeInactive(certDaysRemainingMetrics, expiringKeys);
   }
 
   private void removeInactive(

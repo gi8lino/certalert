@@ -103,6 +103,11 @@ CertAlert exposes a set of Prometheus metrics to monitor certificate expirations
    - **Description:** Validity state (`0 = valid`, `1 = invalid or expired`)
    - **Labels:** `certificate_name`, `alias`, `path`, `type`
 
+3. **`certalert_certificate_days_remaining`**
+   - **Type:** Gauge
+   - **Description:** Days until certificate expiration
+   - **Labels:** `certificate_name`, `alias`, `path`, `type`
+
 👉 Metrics are scraped at `/metrics`.
 
 ## 🤝 Contributing
