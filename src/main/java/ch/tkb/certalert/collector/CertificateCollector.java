@@ -19,7 +19,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,17 +70,14 @@ public class CertificateCollector {
             List<X509Certificate> certs = CertificateLoader.loadAll(entry.path());
             for (int i = 0; i < certs.size(); i++) {
               String alias = certs.size() == 1 ? "default" : "cert" + (i + 1);
-              collected.add(
-                  processSingleCert(
-                      entry.path(), entry.type(), entry.name(), alias, certs.get(i), existing));
+              collected.add(processInfo(buildInfoFromCert(entry, alias, certs.get(i)), existing));
             }
           }
           case "jceks", "jks", "dks", "p12", "pkcs11", "pkcs12" -> {
             String pw = Resolver.resolve(entry.password());
             KeyStore ks = KeystoreLoader.load(entry.type(), entry.path(), pw);
             for (String alias : Collections.list(ks.aliases())) {
-              collected.add(
-                  processAlias(entry.path(), entry.type(), entry.name(), alias, ks, existing));
+              collected.add(processAlias(entry, alias, ks, existing));
             }
           }
           default ->
@@ -107,76 +103,57 @@ public class CertificateCollector {
     return lastUpdateTime.get();
   }
 
-  /** Handle X.509 cert directly (non-keystore). */
-  private CertificateInfo processSingleCert(
-      String path,
-      String type,
-      String name,
-      String alias,
-      X509Certificate cert,
-      Map<CertificateIdentity, CertificateInfo> existing) {
-    try {
-      var newInfo = buildInfoFromCert(path, type, name, alias, cert);
-      Optional<CertificateInfo> oldInfo =
-          Optional.ofNullable(existing.get(new CertificateIdentity(path, type, name, alias)));
-
-      if (oldInfo.isPresent()) {
-        var old = oldInfo.get();
-        if (!newInfo.equals(old)) {
-          log.info(
-              "Certificate {}:{} changed {} → {}",
-              name,
-              alias,
-              old.getStatus(),
-              newInfo.getStatus());
-          publishMetrics(newInfo);
-        }
-        return newInfo;
-      }
-
-      log.debug(
-          "New certificate {}:{} expires {}", name, alias, formatter.format(newInfo.getNotAfter()));
-      publishMetrics(newInfo);
-      return newInfo;
-    } catch (Exception e) {
-      return handleAliasError(path, type, name, alias, e, existing);
-    }
-  }
-
   /** Handle alias inside a keystore. */
   private CertificateInfo processAlias(
-      String path,
-      String type,
-      String name,
+      CertificateConfig.CertificateEntry entry,
       String alias,
       KeyStore ks,
       Map<CertificateIdentity, CertificateInfo> existing) {
     try {
-      var newInfo = buildInfo(path, type, name, alias, ks);
-      Optional<CertificateInfo> oldInfo =
-          Optional.ofNullable(existing.get(new CertificateIdentity(path, type, name, alias)));
-
-      if (oldInfo.isPresent()) {
-        var old = oldInfo.get();
-        if (!newInfo.equals(old)) {
-          log.info(
-              "Certificate {}:{} changed {} → {}",
-              name,
-              alias,
-              old.getStatus(),
-              newInfo.getStatus());
-          publishMetrics(newInfo);
-        }
-        return newInfo;
-      }
-
-      log.debug(
-          "New certificate {}:{} expires {}", name, alias, formatter.format(newInfo.getNotAfter()));
-      publishMetrics(newInfo);
-      return newInfo;
+      return processInfo(buildInfo(entry.path(), entry.type(), entry.name(), alias, ks), existing);
     } catch (Exception e) {
-      return handleAliasError(path, type, name, alias, e, existing);
+      return handleAliasError(entry.path(), entry.type(), entry.name(), alias, e, existing);
     }
+  }
+
+  /** Publishes and logs changes for a collected certificate. */
+  private CertificateInfo processInfo(
+      CertificateInfo newInfo, Map<CertificateIdentity, CertificateInfo> existing) {
+    CertificateInfo oldInfo = existing.get(CertificateIdentity.from(newInfo));
+
+    if (oldInfo != null) {
+      if (!newInfo.equals(oldInfo)) {
+        log.info(
+            "Certificate {}:{} changed {} → {}",
+            newInfo.getName(),
+            newInfo.getAlias(),
+            oldInfo.getStatus(),
+            newInfo.getStatus());
+        publishMetrics(newInfo);
+      }
+      return newInfo;
+    }
+
+    logNewCertificate(newInfo);
+    publishMetrics(newInfo);
+    return newInfo;
+  }
+
+  private void logNewCertificate(CertificateInfo info) {
+    if (info.getNotAfter() == null) {
+      log.debug("New certificate {}:{} has no expiry date", info.getName(), info.getAlias());
+      return;
+    }
+    log.debug(
+        "New certificate {}:{} expires {}",
+        info.getName(),
+        info.getAlias(),
+        formatter.format(info.getNotAfter()));
+  }
+
+  private CertificateInfo buildInfoFromCert(
+      CertificateConfig.CertificateEntry entry, String alias, X509Certificate cert) {
+    return buildInfoFromCert(entry.path(), entry.type(), entry.name(), alias, cert);
   }
 
   /** Extracts X509 info from a single certificate. */
