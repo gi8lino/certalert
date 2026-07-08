@@ -24,8 +24,8 @@ dependencies {
 
     implementation 'io.micrometer:micrometer-registry-prometheus:1.17.0'
     implementation 'com.google.guava:guava:33.6.0-jre'
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.22.0'
-    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.22.0'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.22.1'
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.22.1'
     implementation 'org.ini4j:ini4j:0.5.4'
     implementation 'org.tomlj:tomlj:1.1.1'
 
