@@ -22,7 +22,7 @@ dependencies {
     compileOnly 'org.projectlombok:lombok:1.18.46'
     annotationProcessor 'org.projectlombok:lombok:1.18.46'
 
-    implementation 'io.micrometer:micrometer-registry-prometheus:1.17.0'
+    implementation 'io.micrometer:micrometer-registry-prometheus:1.17.1'
     implementation 'com.google.guava:guava:33.7.1-jre'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.22.2'
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.22.2'
