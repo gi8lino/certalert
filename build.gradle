@@ -27,7 +27,7 @@ dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.22.2'
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.22.2'
     implementation 'org.ini4j:ini4j:0.5.4'
-    implementation 'org.tomlj:tomlj:1.2.0'
+    implementation 'org.tomlj:tomlj:1.3.0'
 
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor:4.1.1'
 
