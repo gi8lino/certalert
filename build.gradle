@@ -23,7 +23,7 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok:1.18.48'
 
     implementation 'io.micrometer:micrometer-registry-prometheus:1.17.1'
-    implementation 'com.google.guava:guava:33.7.1-jre'
+    implementation 'com.google.guava:guava:33.7.2-jre'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.22.3'
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.22.3'
     implementation 'org.ini4j:ini4j:0.5.4'
