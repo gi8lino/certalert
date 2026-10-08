@@ -38,8 +38,20 @@ public class CertificateMetricsPublisher {
     this.meterRegistry = meterRegistry;
   }
 
-  /** Publishes or updates the expiration metric for a given certificate. */
-  public void publishExpiration(CertificateInfo certInfo) {
+  /** Reconciles registered metrics with the certificates observed during one collection cycle. */
+  public void publish(Collection<CertificateInfo> certificates) {
+    certificates.forEach(this::publishCertificate);
+    removeMetricsForMissingCertificates(certificates);
+  }
+
+  /** Publishes every metric associated with one certificate. */
+  private void publishCertificate(CertificateInfo certInfo) {
+    publishExpiration(certInfo);
+    publishValidity(certInfo);
+  }
+
+  /** Publishes or updates expiration-related metrics when the certificate has an expiry date. */
+  private void publishExpiration(CertificateInfo certInfo) {
     Instant expiry = certInfo.getNotAfter();
     if (expiry == null) {
       return;
@@ -90,9 +102,9 @@ public class CertificateMetricsPublisher {
   }
 
   /** Publishes or updates the validity metric for a given certificate. */
-  public void publishValidity(CertificateInfo certInfo, boolean isValid) {
+  private void publishValidity(CertificateInfo certInfo) {
     CertificateIdentity key = CertificateIdentity.from(certInfo);
-    double status = isValid ? 0 : 1;
+    double status = certInfo.getStatus() == CertificateInfo.Status.VALID ? 0 : 1;
 
     certValidityMetrics
         .computeIfAbsent(
@@ -114,8 +126,8 @@ public class CertificateMetricsPublisher {
         .set(status);
   }
 
-  /** Removes metrics for certificate identities that are no longer present. */
-  public void prune(Collection<CertificateInfo> activeCertificates) {
+  /** Removes metrics that do not belong to certificates observed during this collection cycle. */
+  private void removeMetricsForMissingCertificates(Collection<CertificateInfo> activeCertificates) {
     Set<CertificateIdentity> activeKeys =
         activeCertificates.stream().map(CertificateIdentity::from).collect(Collectors.toSet());
     Set<CertificateIdentity> expiringKeys =
@@ -129,6 +141,7 @@ public class CertificateMetricsPublisher {
     removeInactive(certDaysRemainingMetrics, expiringKeys);
   }
 
+  /** Removes gauges whose certificate identities are absent from the provided active set. */
   private void removeInactive(
       ConcurrentMap<CertificateIdentity, MetricState> metrics,
       Set<CertificateIdentity> activeKeys) {
@@ -144,5 +157,9 @@ public class CertificateMetricsPublisher {
             });
   }
 
-  private record MetricState(AtomicDouble holder, Meter gauge) {}
+  /** Holds the mutable value and registered gauge for one certificate metric. */
+  private record MetricState(
+      AtomicDouble holder, // Mutable value observed by the gauge.
+      Meter gauge // Registered gauge that must be removed when stale.
+      ) {}
 }

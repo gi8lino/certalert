@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
@@ -25,24 +26,28 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-/**
- * Collects certificate data and publishes metrics, tracking state changes and replacing stale
- * entries with a fresh snapshot.
- */
+/** Collects certificate data, logs state changes, and exposes the latest immutable snapshot. */
 @Component
 public class CertificateCollector {
 
+  /** Logger for collection activity and errors. */
   private static final Logger log = LoggerFactory.getLogger(CertificateCollector.class);
+
+  /** Formatter used to log certificate expiry timestamps. */
   private static final DateTimeFormatter formatter =
       DateTimeFormatter.ISO_OFFSET_DATE_TIME.withZone(ZoneId.systemDefault());
 
+  /** Source configuration for certificate collection. */
   private final CertificateConfig config;
+
+  /** Publisher that reconciles Prometheus metrics after each scan. */
   private final CertificateMetricsPublisher metricsPublisher;
 
   /** Holds the last collected certificate information. */
   private final AtomicReference<List<CertificateInfo>> certificateInfos =
       new AtomicReference<>(List.of());
 
+  /** Holds the completion time of the latest collection cycle. */
   private final AtomicReference<Instant> lastUpdateTime = new AtomicReference<>();
 
   /** Construct a CertificateCollector with config and metrics publisher. */
@@ -53,44 +58,64 @@ public class CertificateCollector {
     log.info("Initialized; monitoring {} certificates", config.certificates().size());
   }
 
-  /**
-   * Scheduled polling method. Polls all configured keystores or certs, publishes metrics, and
-   * prunes stale entries.
-   */
+  /** Scheduled polling method that replaces the certificate snapshot and reconciles its metrics. */
   @Scheduled(fixedDelayString = "${certalert.check-interval}")
   public void collectCertificateData() {
     Map<CertificateIdentity, CertificateInfo> existing = indexByIdentity(certificateInfos.get());
     List<CertificateInfo> collected = new ArrayList<>();
 
-    // Process each configured certificate source
     for (var entry : config.certificates()) {
-      try {
-        switch (entry.type().toLowerCase()) {
-          case "pem", "crt" -> {
-            List<X509Certificate> certs = CertificateLoader.loadAll(entry.path());
-            for (int i = 0; i < certs.size(); i++) {
-              String alias = certs.size() == 1 ? "default" : "cert" + (i + 1);
-              collected.add(processInfo(buildInfoFromCert(entry, alias, certs.get(i)), existing));
-            }
-          }
-          case "jceks", "jks", "dks", "p12", "pkcs11", "pkcs12" -> {
-            String pw = Resolver.resolve(entry.password());
-            KeyStore ks = KeystoreLoader.load(entry.type(), entry.path(), pw);
-            for (String alias : Collections.list(ks.aliases())) {
-              collected.add(processAlias(entry, alias, ks, existing));
-            }
-          }
-          default ->
-              throw new IllegalArgumentException("Unsupported certificate type: " + entry.type());
-        }
-      } catch (Exception e) {
-        collected.add(handleLoadError(entry, e, existing));
-      }
+      collected.addAll(collectEntry(entry, existing));
     }
 
-    certificateInfos.set(List.copyOf(collected));
-    metricsPublisher.prune(collected);
+    List<CertificateInfo> snapshot = List.copyOf(collected);
+    certificateInfos.set(snapshot);
+    publishMetrics(snapshot);
     lastUpdateTime.set(Instant.now());
+  }
+
+  /** Collects all certificates represented by one configured certificate source. */
+  private List<CertificateInfo> collectEntry(
+      CertificateConfig.CertificateEntry entry,
+      Map<CertificateIdentity, CertificateInfo> existing) {
+    try {
+      return switch (entry.type().toLowerCase(Locale.ROOT)) {
+        case "pem", "crt" -> collectPemCertificates(entry, existing);
+        case "jceks", "jks", "dks", "p12", "pkcs11", "pkcs12" ->
+            collectKeystoreCertificates(entry, existing);
+        default ->
+            throw new IllegalArgumentException("Unsupported certificate type: " + entry.type());
+      };
+    } catch (Exception e) {
+      return List.of(handleLoadError(entry, e, existing));
+    }
+  }
+
+  /** Collects every X.509 certificate in a PEM or CRT bundle. */
+  private List<CertificateInfo> collectPemCertificates(
+      CertificateConfig.CertificateEntry entry, Map<CertificateIdentity, CertificateInfo> existing)
+      throws Exception {
+    List<X509Certificate> certificates = CertificateLoader.loadAll(entry.path());
+    List<CertificateInfo> collected = new ArrayList<>();
+    for (int index = 0; index < certificates.size(); index++) {
+      String alias = certificates.size() == 1 ? "default" : "cert" + (index + 1);
+      collected.add(
+          processInfo(buildInfoFromCert(entry, alias, certificates.get(index)), existing));
+    }
+    return collected;
+  }
+
+  /** Collects every alias in a configured keystore. */
+  private List<CertificateInfo> collectKeystoreCertificates(
+      CertificateConfig.CertificateEntry entry, Map<CertificateIdentity, CertificateInfo> existing)
+      throws Exception {
+    String password = Resolver.resolve(entry.password());
+    KeyStore keyStore = KeystoreLoader.load(entry.type(), entry.path(), password);
+    List<CertificateInfo> collected = new ArrayList<>();
+    for (String alias : Collections.list(keyStore.aliases())) {
+      collected.add(processAlias(entry, alias, keyStore, existing));
+    }
+    return collected;
   }
 
   /** Return a snapshot of current certificate info. */
@@ -129,16 +154,15 @@ public class CertificateCollector {
             newInfo.getAlias(),
             oldInfo.getStatus(),
             newInfo.getStatus());
-        publishMetrics(newInfo);
       }
       return newInfo;
     }
 
     logNewCertificate(newInfo);
-    publishMetrics(newInfo);
     return newInfo;
   }
 
+  /** Logs the expiry date of a newly observed certificate when one is available. */
   private void logNewCertificate(CertificateInfo info) {
     if (info.getNotAfter() == null) {
       log.debug("New certificate {}:{} has no expiry date", info.getName(), info.getAlias());
@@ -151,6 +175,7 @@ public class CertificateCollector {
         formatter.format(info.getNotAfter()));
   }
 
+  /** Builds certificate information from a PEM or CRT configuration entry. */
   private CertificateInfo buildInfoFromCert(
       CertificateConfig.CertificateEntry entry, String alias, X509Certificate cert) {
     return buildInfoFromCert(entry.path(), entry.type(), entry.name(), alias, cert);
@@ -197,17 +222,12 @@ public class CertificateCollector {
     return buildInfoFromCert(path, type, name, alias, cert);
   }
 
-  /** Publishes metrics for a certificate. */
-  private void publishMetrics(CertificateInfo info) {
+  /** Reconciles metrics and contains publisher failures so a scan still completes. */
+  private void publishMetrics(List<CertificateInfo> infos) {
     try {
-      metricsPublisher.publishExpiration(info);
-      metricsPublisher.publishValidity(info, info.getStatus() == Status.VALID);
+      metricsPublisher.publish(infos);
     } catch (RuntimeException e) {
-      log.warn(
-          "Failed to publish metrics for {}:{}: {}",
-          info.getName(),
-          info.getAlias(),
-          e.getMessage());
+      log.warn("Failed to reconcile certificate metrics: {}", e.getMessage());
     }
   }
 
@@ -228,8 +248,6 @@ public class CertificateCollector {
             .subject(e.getMessage())
             .status(Status.INVALID)
             .build();
-    publishMetrics(errInfo);
-
     CertificateInfo oldInfo = existing.get(new CertificateIdentity(path, type, name, alias));
     if (oldInfo != null) {
       if (!errInfo.equals(oldInfo)) {
