@@ -5,7 +5,6 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.Period;
 import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,7 +14,10 @@ import java.util.List;
  * <p>Supports both short (e.g. "1y, 2mo, 5d") and long formats (e.g. "1 year, 2 months, 5 days"),
  * with comma-separated units.
  */
-public class TimeUtils {
+public final class TimeUtils {
+
+  /** Prevents instantiation of this static utility class. */
+  private TimeUtils() {}
 
   /**
    * Formats the difference between two Instants in short form. Returns null if either Instant is
@@ -109,20 +111,30 @@ public class TimeUtils {
     return formatPeriod(now, now.plus(duration), longFormat);
   }
 
+  /** Defines display labels for the date and time units included in a formatted period. */
   private enum Unit {
-    YEARS(ChronoUnit.YEARS, "y", " year", " years"),
-    MONTHS(ChronoUnit.MONTHS, "mo", " month", " months"),
-    DAYS(ChronoUnit.DAYS, "d", " day", " days"),
-    HOURS(ChronoUnit.HOURS, "h", " hour", " hours"),
-    MINUTES(ChronoUnit.MINUTES, "m", " minute", " minutes");
+    /** Calendar year unit. */
+    YEARS("y", " year", " years"),
+    /** Calendar month unit. */
+    MONTHS("mo", " month", " months"),
+    /** Calendar day unit. */
+    DAYS("d", " day", " days"),
+    /** Elapsed hour unit. */
+    HOURS("h", " hour", " hours"),
+    /** Elapsed minute unit. */
+    MINUTES("m", " minute", " minutes");
 
-    final ChronoUnit chrono;
+    /** Abbreviated label for the unit. */
     final String shortLabel;
+
+    /** Singular long-form label for the unit. */
     final String singular;
+
+    /** Plural long-form label for the unit. */
     final String plural;
 
-    Unit(ChronoUnit chrono, String shortLabel, String singular, String plural) {
-      this.chrono = chrono;
+    /** Creates a display definition for one time unit. */
+    Unit(String shortLabel, String singular, String plural) {
       this.shortLabel = shortLabel;
       this.singular = singular;
       this.plural = plural;

@@ -34,7 +34,10 @@ import org.tomlj.TomlTable;
  */
 public final class Resolver {
 
+  /** Parser for JSON value sources. */
   private static final ObjectMapper jsonMapper = new ObjectMapper();
+
+  /** Parser for YAML value sources. */
   private static final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
 
   private Resolver() {

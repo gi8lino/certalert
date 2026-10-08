@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.KeyStore;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -14,7 +15,7 @@ import java.util.Map;
  * <p>Supports formats such as {@code jks}, {@code pkcs12}, {@code p12}, {@code jceks}, etc. Input
  * types are case-insensitive and some common aliases are automatically mapped.
  */
-public class KeystoreLoader {
+public final class KeystoreLoader {
 
   /**
    * Maps common lowercase or alias keystore type names to their canonical names used by {@link
@@ -28,6 +29,9 @@ public class KeystoreLoader {
           "p12", "PKCS12",
           "dks", "DKS",
           "pkcs11", "PKCS11");
+
+  /** Prevents instantiation of this static utility class. */
+  private KeystoreLoader() {}
 
   /**
    * Loads a keystore of the specified type from the given file path using the provided password.
@@ -49,7 +53,7 @@ public class KeystoreLoader {
       throw new FileNotFoundException("Keystore file does not exist: " + normalized);
     }
 
-    String normalizedType = TYPE_ALIASES.get(type.toLowerCase());
+    String normalizedType = TYPE_ALIASES.get(type.toLowerCase(Locale.ROOT));
     if (normalizedType == null) {
       throw new IllegalArgumentException("Unsupported keystore type: " + type);
     }

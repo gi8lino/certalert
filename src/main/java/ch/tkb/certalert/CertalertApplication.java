@@ -9,6 +9,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @ConfigurationPropertiesScan
 @EnableScheduling
 public class CertalertApplication {
+  /** Starts the Spring Boot application. */
   public static void main(String[] args) {
     SpringApplication.run(CertalertApplication.class, args);
   }

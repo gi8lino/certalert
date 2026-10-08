@@ -27,8 +27,13 @@ public class DashboardController {
   /** Placeholder indicating a certificate is expired. */
   private static final String EXPIRED_PLACEHOLDER = "expired";
 
+  /** Service that owns the current certificate snapshot. */
   private final CertificateCollector collector;
+
+  /** Dashboard configuration including expiry thresholds and display format. */
   private final CertificateConfig config;
+
+  /** Version displayed in the dashboard footer. */
   private final String appVersion;
 
   /** Formatter for displaying dates according to dashboard configuration. */

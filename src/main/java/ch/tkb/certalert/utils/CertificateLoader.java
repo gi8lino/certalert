@@ -18,7 +18,10 @@ import java.util.List;
  * <p>Supports both single certificates and PEM bundles containing multiple certificates (e.g., full
  * certificate chains).
  */
-public class CertificateLoader {
+public final class CertificateLoader {
+
+  /** Prevents instantiation of this static utility class. */
+  private CertificateLoader() {}
 
   /**
    * Loads all X.509 certificates from the given file path.
