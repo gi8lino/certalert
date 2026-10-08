@@ -1,0 +1,39 @@
+---
+# Requires the Prometheus Operator CRDs. Adjust metadata.labels to match the
+# Prometheus instance that should select this PrometheusRule.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: certalert
+  labels:
+    app: certalert
+spec:
+  groups:
+    - name: certalert.certificates
+      rules:
+        - alert: CertificateExpiringSoon
+          expr: certalert_certificate_validity == 0 and certalert_certificate_days_remaining < 14 and certalert_certificate_days_remaining >= 3
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: Certificate expires within 14 days
+            description: Certificate {{ $labels.certificate_name }} (alias {{ $labels.alias }}) expires in {{ $value | printf "%.1f" }} days.
+
+        - alert: CertificateExpiringUrgently
+          expr: certalert_certificate_validity == 0 and certalert_certificate_days_remaining < 3
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: Certificate expires within three days
+            description: Certificate {{ $labels.certificate_name }} (alias {{ $labels.alias }}) expires in {{ $value | printf "%.1f" }} days.
+
+        - alert: CertificateInvalid
+          expr: certalert_certificate_validity == 1
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: Certificate is invalid or expired
+            description: Certificate {{ $labels.certificate_name }} (alias {{ $labels.alias }}) is invalid or expired.
