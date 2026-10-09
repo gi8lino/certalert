@@ -1,7 +1,8 @@
 package ch.tkb.certalert.config;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Positive;
 import java.time.Duration;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -14,7 +15,7 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties(prefix = "certalert")
 public record CertificateConfig(
-    Duration checkInterval, // Interval between checks (e.g., PT2M)
+    @Positive Duration checkInterval, // Interval between checks (e.g., PT2M)
     List<@Valid CertificateEntry> certificates, // List of configured certificates
     Dashboard dashboard // Dashboard-specific settings
     ) {
@@ -23,13 +24,16 @@ public record CertificateConfig(
   public CertificateConfig {
     checkInterval = checkInterval != null ? checkInterval : Duration.ofMinutes(10);
     dashboard = dashboard != null ? dashboard : new Dashboard(null, null, null);
-    certificates = certificates != null ? certificates : List.of();
+    certificates = certificates != null ? List.copyOf(certificates) : List.of();
+    if (checkInterval.isZero() || checkInterval.isNegative()) {
+      throw new IllegalArgumentException("checkInterval must be positive");
+    }
   }
 
   /** Dashboard settings including thresholds and date format. */
   public record Dashboard(
-      Duration warningThreshold, // Warn if certificate expires within this duration
-      Duration criticalThreshold, // Critical if certificate expires within this duration
+      @Positive Duration warningThreshold, // Warn if certificate expires within this duration
+      @Positive Duration criticalThreshold, // Critical if certificate expires within this duration
       String dateFormat // Date/time format pattern for display
       ) {
 
@@ -44,12 +48,29 @@ public record CertificateConfig(
       warningThreshold = warningThreshold != null ? warningThreshold : DEFAULT_WARNING_THRESHOLD;
       criticalThreshold =
           criticalThreshold != null ? criticalThreshold : DEFAULT_CRITICAL_THRESHOLD;
+      validateThresholds(warningThreshold, criticalThreshold);
 
       if (!isValidDateFormat(dateFormat)) {
         if (dateFormat != null) {
           log.warn("Invalid dateFormat '{}', using default.", dateFormat);
         }
         dateFormat = DEFAULT_DATE_FORMAT;
+      }
+    }
+
+    /**
+     * Ensures both thresholds are positive and the critical threshold is no greater than warning.
+     */
+    private static void validateThresholds(Duration warningThreshold, Duration criticalThreshold) {
+      if (warningThreshold.isZero() || warningThreshold.isNegative()) {
+        throw new IllegalArgumentException("warningThreshold must be positive");
+      }
+      if (criticalThreshold.isZero() || criticalThreshold.isNegative()) {
+        throw new IllegalArgumentException("criticalThreshold must be positive");
+      }
+      if (criticalThreshold.compareTo(warningThreshold) > 0) {
+        throw new IllegalArgumentException(
+            "criticalThreshold must not be greater than warningThreshold");
       }
     }
 
@@ -69,9 +90,9 @@ public record CertificateConfig(
 
   /** Describes a certificate entry with metadata and optional password. */
   public record CertificateEntry(
-      @NotEmpty String name, // Logical name of the certificate
-      @NotEmpty String path, // Path to the certificate file
-      @NotEmpty String type, // Type (e.g., JKS, PKCS12)
+      @NotBlank String name, // Logical name of the certificate
+      @NotBlank String path, // Path to the certificate file
+      @NotBlank String type, // Type (e.g., JKS, PKCS12)
       String password // Optional password (may be null)
       ) {}
 }
