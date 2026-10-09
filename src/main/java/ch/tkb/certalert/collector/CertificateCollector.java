@@ -62,13 +62,13 @@ public class CertificateCollector {
   public void collectCertificateData() {
     Map<CertificateIdentity, CertificateInfo> existingCertificates =
         indexByIdentity(certificateInfos.get());
-    List<CertificateInfo> collected = new ArrayList<>();
+    List<CertificateInfo> collectedCertificates = new ArrayList<>();
 
-    for (var entry : config.certificates()) {
-      collected.addAll(collectEntry(entry, existingCertificates));
+    for (CertificateConfig.CertificateEntry certificateEntry : config.certificates()) {
+      collectedCertificates.addAll(collectEntry(certificateEntry, existingCertificates));
     }
 
-    List<CertificateInfo> snapshot = List.copyOf(collected);
+    List<CertificateInfo> snapshot = List.copyOf(collectedCertificates);
     certificateInfos.set(snapshot);
     publishMetrics(snapshot);
     lastUpdateTime.set(Instant.now());
@@ -96,14 +96,14 @@ public class CertificateCollector {
       CertificateConfig.CertificateEntry entry, Map<CertificateIdentity, CertificateInfo> existing)
       throws Exception {
     List<X509Certificate> certificates = CertificateLoader.loadAll(entry.path());
-    List<CertificateInfo> collected = new ArrayList<>();
+    List<CertificateInfo> collectedCertificates = new ArrayList<>();
     for (int index = 0; index < certificates.size(); index++) {
       String alias = certificates.size() == 1 ? "default" : "cert" + (index + 1);
       X509Certificate certificate = certificates.get(index);
       CertificateInfo info = buildInfoFromCert(entry, alias, certificate);
-      collected.add(processInfo(info, existing));
+      collectedCertificates.add(processInfo(info, existing));
     }
-    return collected;
+    return collectedCertificates;
   }
 
   /** Collects every alias in a configured keystore. */
@@ -112,11 +112,11 @@ public class CertificateCollector {
       throws Exception {
     String password = Resolver.resolve(entry.password());
     KeyStore keyStore = KeystoreLoader.load(entry.type(), entry.path(), password);
-    List<CertificateInfo> collected = new ArrayList<>();
+    List<CertificateInfo> collectedCertificates = new ArrayList<>();
     for (String alias : Collections.list(keyStore.aliases())) {
-      collected.add(processAlias(entry, alias, keyStore, existing));
+      collectedCertificates.add(processAlias(entry, alias, keyStore, existing));
     }
-    return collected;
+    return collectedCertificates;
   }
 
   /** Return a snapshot of current certificate info. */
@@ -247,7 +247,7 @@ public class CertificateCollector {
       String alias,
       Exception e,
       Map<CertificateIdentity, CertificateInfo> existing) {
-    var errInfo =
+    CertificateInfo failureInfo =
         CertificateInfo.builder()
             .path(path)
             .name(name)
@@ -256,15 +256,15 @@ public class CertificateCollector {
             .subject(describe(e))
             .status(Status.LOAD_FAILED)
             .build();
-    CertificateInfo oldInfo = existing.get(new CertificateIdentity(path, type, name, alias));
-    if (oldInfo != null) {
-      if (!errInfo.equals(oldInfo)) {
+    CertificateInfo previousInfo = existing.get(new CertificateIdentity(path, type, name, alias));
+    if (previousInfo != null) {
+      if (!failureInfo.equals(previousInfo)) {
         log.warn("Certificate {}:{} became invalid: {}", name, alias, describe(e), e);
       }
-      return errInfo;
+      return failureInfo;
     }
     log.error("Unable to load certificate {}:{}: {}", name, alias, describe(e), e);
-    return errInfo;
+    return failureInfo;
   }
 
   /** Returns a non-empty, human-readable description of a collection failure. */

@@ -68,7 +68,7 @@ public final class CertificateLoader {
    * @throws CertificateException if the content cannot be parsed as an X.509 certificate
    */
   public static X509Certificate load(String path) throws IOException, CertificateException {
-    List<X509Certificate> all = loadAll(path);
-    return all.get(0);
+    List<X509Certificate> certificates = loadAll(path);
+    return certificates.get(0);
   }
 }

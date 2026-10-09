@@ -52,18 +52,18 @@ public class CertificateMetricsPublisher {
 
   /** Publishes or updates expiration-related metrics when the certificate has an expiry date. */
   private void publishExpiration(CertificateInfo certInfo) {
-    Instant expiry = certInfo.getNotAfter();
-    if (expiry == null) {
+    Instant expiration = certInfo.getNotAfter();
+    if (expiration == null) {
       return;
     }
 
-    long epochSeconds = expiry.getEpochSecond();
-    double daysRemaining = Duration.between(Instant.now(), expiry).toSeconds() / 86_400.0;
-    CertificateIdentity key = CertificateIdentity.from(certInfo);
+    long epochSeconds = expiration.getEpochSecond();
+    double daysRemaining = Duration.between(Instant.now(), expiration).toSeconds() / 86_400.0;
+    CertificateIdentity identity = CertificateIdentity.from(certInfo);
 
     certExpirationMetrics
         .computeIfAbsent(
-            key,
+            identity,
             metricKey -> {
               AtomicDouble holder = new AtomicDouble(epochSeconds);
               Gauge gauge =
@@ -83,7 +83,7 @@ public class CertificateMetricsPublisher {
 
     certDaysRemainingMetrics
         .computeIfAbsent(
-            key,
+            identity,
             metricKey -> {
               AtomicDouble holder = new AtomicDouble(daysRemaining);
               Gauge gauge =
@@ -103,12 +103,12 @@ public class CertificateMetricsPublisher {
 
   /** Publishes or updates the validity metric for a given certificate. */
   private void publishValidity(CertificateInfo certInfo) {
-    CertificateIdentity key = CertificateIdentity.from(certInfo);
+    CertificateIdentity identity = CertificateIdentity.from(certInfo);
     double validityValue = certInfo.getStatus() == CertificateInfo.Status.VALID ? 0 : 1;
 
     certValidityMetrics
         .computeIfAbsent(
-            key,
+            identity,
             metricKey -> {
               AtomicDouble holder = new AtomicDouble(validityValue);
               Gauge gauge =
@@ -143,9 +143,9 @@ public class CertificateMetricsPublisher {
 
   /** Removes gauges whose certificate identities are absent from the provided active set. */
   private void removeInactive(
-      ConcurrentMap<CertificateIdentity, MetricState> metrics,
+      ConcurrentMap<CertificateIdentity, MetricState> metricStates,
       Set<CertificateIdentity> activeKeys) {
-    metrics
+    metricStates
         .entrySet()
         .removeIf(
             entry -> {

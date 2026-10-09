@@ -55,7 +55,7 @@ public class DashboardController {
   /** Handles GET requests to '/' and populates the model for the dashboard view. */
   @GetMapping("/")
   public String dashboard(Model model) {
-    Instant now = Instant.now();
+    Instant currentTime = Instant.now();
 
     model.addAttribute(
         "lastUpdate", formatInstant(collector.getLastUpdateTime(), NEVER_PLACEHOLDER));
@@ -63,7 +63,7 @@ public class DashboardController {
     model.addAttribute("checkInterval", TimeUtils.formatDuration(config.checkInterval()));
 
     List<CertificateView> views =
-        collector.getCertificateInfos().stream().map(info -> toView(info, now)).toList();
+        collector.getCertificateInfos().stream().map(info -> toView(info, currentTime)).toList();
     model.addAttribute("certificates", views);
 
     return "dashboard";
@@ -122,11 +122,11 @@ public class DashboardController {
       return "status-crit";
     }
     Duration remaining = Duration.between(now, notAfter);
-    CertificateConfig.Dashboard dash = config.dashboard();
-    if (remaining.isNegative() || remaining.compareTo(dash.criticalThreshold()) <= 0) {
+    CertificateConfig.Dashboard dashboardConfig = config.dashboard();
+    if (remaining.isNegative() || remaining.compareTo(dashboardConfig.criticalThreshold()) <= 0) {
       return "status-crit";
     }
-    if (remaining.compareTo(dash.warningThreshold()) <= 0) {
+    if (remaining.compareTo(dashboardConfig.warningThreshold()) <= 0) {
       return "status-warn";
     }
     return "status-ok";
