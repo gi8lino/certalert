@@ -27,7 +27,7 @@ management:
         prometheus: metrics
 
 certalert:
-  version: 1.0.0
+  version: "@appVersion@"
   check-interval: 2m
   dashboard:
     critical-threshold: 3d

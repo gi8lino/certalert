@@ -38,13 +38,15 @@ jobs:
             ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
 
-      - name: Build application JAR
-        run: ./gradlew bootJar -x test --no-daemon
-
       - name: Determine version (from tag)
         id: tag
         if: startsWith(github.ref, 'refs/tags/v')
         run: echo "version=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
+
+      - name: Build application JAR
+        env:
+          APP_VERSION: ${{ steps.tag.outputs.version || 'dev' }}
+        run: ./gradlew bootJar -PappVersion="$APP_VERSION" -x test --no-daemon
 
       - name: Upload JAR artifact (for release workflow)
         if: startsWith(github.ref, 'refs/tags/v')

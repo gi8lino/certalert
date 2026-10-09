@@ -6,8 +6,16 @@ plugins {
     id 'com.diffplug.spotless' version '8.10.4'
 }
 
+def appVersion = providers.gradleProperty('appVersion').orElse('dev').get()
+
 repositories {
     mavenCentral()
+}
+
+tasks.named('processResources') {
+    filesMatching('application*.yml') {
+        filter(org.apache.tools.ant.filters.ReplaceTokens, tokens: [appVersion: appVersion])
+    }
 }
 
 group = 'ch.tkb.certalert'
