@@ -1,11 +1,13 @@
 package ch.tkb.certalert.utils;
 
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
@@ -28,9 +30,11 @@ public final class CertificateLoader {
    *
    * @param path the absolute or relative path to a PEM or CRT file
    * @return a list of {@link X509Certificate} objects; never null
-   * @throws Exception if the file is missing, unreadable, or contains no valid X.509 certificates
+   * @throws IOException if the file is missing or unreadable
+   * @throws CertificateException if the content cannot be parsed as X.509 certificates
    */
-  public static List<X509Certificate> loadAll(String path) throws Exception {
+  public static List<X509Certificate> loadAll(String path)
+      throws IOException, CertificateException {
     Path normalized = Paths.get(path).toAbsolutePath().normalize();
 
     if (!Files.exists(normalized) || !Files.isRegularFile(normalized)) {
@@ -60,9 +64,10 @@ public final class CertificateLoader {
    *
    * @param path the file path to load
    * @return the first {@link X509Certificate} found in the file
-   * @throws Exception if the file is invalid or contains no valid certificate
+   * @throws IOException if the file is missing or unreadable
+   * @throws CertificateException if the content cannot be parsed as an X.509 certificate
    */
-  public static X509Certificate load(String path) throws Exception {
+  public static X509Certificate load(String path) throws IOException, CertificateException {
     List<X509Certificate> all = loadAll(path);
     return all.get(0);
   }

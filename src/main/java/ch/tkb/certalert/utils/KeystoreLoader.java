@@ -2,10 +2,14 @@ package ch.tkb.certalert.utils;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
 import java.util.Locale;
 import java.util.Map;
 
@@ -44,9 +48,13 @@ public final class KeystoreLoader {
    * @return a loaded {@link KeyStore} instance
    * @throws FileNotFoundException if the file does not exist or is not a regular file
    * @throws IllegalArgumentException if the specified keystore type is not supported
-   * @throws Exception if loading the keystore fails due to IO or format issues
+   * @throws IOException if the keystore file cannot be read
+   * @throws KeyStoreException if the selected keystore type is unavailable
+   * @throws NoSuchAlgorithmException if the required integrity algorithm is unavailable
+   * @throws CertificateException if a certificate in the keystore cannot be loaded
    */
-  public static KeyStore load(String type, String path, String password) throws Exception {
+  public static KeyStore load(String type, String path, String password)
+      throws IOException, KeyStoreException, NoSuchAlgorithmException, CertificateException {
     Path normalized = Paths.get(path).toAbsolutePath().normalize();
 
     if (!Files.exists(normalized) || !Files.isRegularFile(normalized)) {
