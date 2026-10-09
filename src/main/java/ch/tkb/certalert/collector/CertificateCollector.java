@@ -234,7 +234,7 @@ public class CertificateCollector {
     try {
       metricsPublisher.publish(infos);
     } catch (RuntimeException e) {
-      log.warn("Failed to reconcile certificate metrics: {}", e.getMessage());
+      log.warn("Failed to reconcile certificate metrics", e);
     }
   }
 
@@ -252,18 +252,24 @@ public class CertificateCollector {
             .name(name)
             .type(type)
             .alias(alias)
-            .subject(e.getMessage())
+            .subject(describe(e))
             .status(Status.INVALID)
             .build();
     CertificateInfo oldInfo = existing.get(new CertificateIdentity(path, type, name, alias));
     if (oldInfo != null) {
       if (!errInfo.equals(oldInfo)) {
-        log.warn("Error for {}:{} changed {}", name, alias, e.getMessage());
+        log.warn("Certificate {}:{} became invalid: {}", name, alias, describe(e), e);
       }
       return errInfo;
     }
-    log.error("Error loading {}:{} {}", name, alias, e.getMessage());
+    log.error("Unable to load certificate {}:{}: {}", name, alias, describe(e), e);
     return errInfo;
+  }
+
+  /** Returns a non-empty, human-readable description of a collection failure. */
+  private String describe(Exception exception) {
+    String message = exception.getMessage();
+    return message == null || message.isBlank() ? exception.getClass().getSimpleName() : message;
   }
 
   /** Handles total keystore load failure. */
