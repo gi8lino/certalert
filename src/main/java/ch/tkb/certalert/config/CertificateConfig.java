@@ -2,7 +2,6 @@ package ch.tkb.certalert.config;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Positive;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -16,7 +15,7 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties(prefix = "certalert")
 public record CertificateConfig(
-    @Positive Duration checkInterval, // Interval between checks (e.g., PT2M)
+    Duration checkInterval, // Interval between checks (e.g., PT2M)
     List<@Valid CertificateEntry> certificates, // List of configured certificates
     Dashboard dashboard // Dashboard-specific settings
     ) {
@@ -33,8 +32,8 @@ public record CertificateConfig(
 
   /** Dashboard settings including thresholds and date format. */
   public record Dashboard(
-      @Positive Duration warningThreshold, // Warn if certificate expires within this duration
-      @Positive Duration criticalThreshold, // Critical if certificate expires within this duration
+      Duration warningThreshold, // Warn if certificate expires within this duration
+      Duration criticalThreshold, // Critical if certificate expires within this duration
       String dateFormat, // Date/time format pattern for display
       ZoneId zoneId // Time zone used for dates, logs, and dashboard durations
       ) {
