@@ -10,12 +10,16 @@ import ch.tkb.certalert.utils.KeystoreLoader;
 import ch.tkb.certalert.utils.Resolver;
 import java.io.File;
 import java.security.KeyStore;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -98,12 +102,30 @@ public class CertificateCollector {
     List<X509Certificate> certificates = CertificateLoader.loadAll(entry.path());
     List<CertificateInfo> collectedCertificates = new ArrayList<>();
     for (int index = 0; index < certificates.size(); index++) {
-      String alias = certificates.size() == 1 ? "default" : "cert" + (index + 1);
       X509Certificate certificate = certificates.get(index);
+      String alias = pemAlias(certificates.size(), certificate);
       CertificateInfo info = buildInfoFromCert(entry, alias, certificate);
       collectedCertificates.add(processInfo(info, existing));
     }
     return collectedCertificates;
+  }
+
+  /**
+   * Returns the default alias for a single certificate or a stable fingerprint alias for a bundle.
+   */
+  static String pemAlias(int certificateCount, X509Certificate certificate) {
+    return certificateCount == 1 ? "default" : "sha256:" + certificateFingerprint(certificate);
+  }
+
+  /** Returns the SHA-256 fingerprint of a certificate's DER encoding. */
+  private static String certificateFingerprint(X509Certificate certificate) {
+    try {
+      byte[] encodedCertificate = certificate.getEncoded();
+      byte[] fingerprintBytes = MessageDigest.getInstance("SHA-256").digest(encodedCertificate);
+      return HexFormat.of().formatHex(fingerprintBytes);
+    } catch (CertificateEncodingException | NoSuchAlgorithmException exception) {
+      throw new IllegalStateException("Unable to calculate certificate fingerprint", exception);
+    }
   }
 
   /** Collects every alias in a configured keystore. */
