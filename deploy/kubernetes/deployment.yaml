@@ -21,7 +21,7 @@ spec:
           volumeMounts:
             - name: config
               mountPath: /config
-            - name: password-file
+            - name: passwords-file
               mountPath: /passwords
             - name: certs
               mountPath: /certs

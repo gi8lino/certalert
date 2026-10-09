@@ -4,15 +4,15 @@ kind: ConfigMap
 metadata:
   name: certalert-config
 data:
-  config.yaml: |
+  certalert.yaml: |
     certalert:
-      check-inverval: 30m
+      check-interval: 30m
       certificates:
         - name: MyApp Keystore
-          path: myapp.jks
-          type: pkcs12
-          password: file:/password/certificates.passwords//jks_password
+          path: /certs/myapp.jks
+          type: jks
+          password: file:/passwords/certificates.passwords//jks_password
         - name: MyApp P12
-          path: myapp.p12
+          path: /certs/myapp.p12
           type: pkcs12
           password: changeit
