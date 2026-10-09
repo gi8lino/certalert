@@ -4,7 +4,9 @@
 .idea/*
 .project
 .settings/*
-bin/*
 build/*
 target/*
 settings.gradle
+/bin/*
+!/bin/dev-tools.mk
+
