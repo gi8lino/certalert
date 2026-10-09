@@ -6,7 +6,6 @@ import ch.tkb.certalert.model.CertificateInfo;
 import ch.tkb.certalert.utils.TimeUtils;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
@@ -50,7 +49,7 @@ public class DashboardController {
 
     // Initialize formatter from dashboard.date-format property
     String pattern = config.dashboard().dateFormat();
-    this.formatter = DateTimeFormatter.ofPattern(pattern).withZone(ZoneId.systemDefault());
+    this.formatter = DateTimeFormatter.ofPattern(pattern).withZone(config.dashboard().zoneId());
   }
 
   /** Handles GET requests to '/' and populates the model for the dashboard view. */
@@ -114,7 +113,7 @@ public class DashboardController {
     if (end.isBefore(now)) {
       return EXPIRED_PLACEHOLDER;
     }
-    return TimeUtils.formatPeriod(now, end);
+    return TimeUtils.formatPeriod(now, end, false, config.dashboard().zoneId());
   }
 
   /** Determines a CSS status class based on configured dashboard thresholds. */

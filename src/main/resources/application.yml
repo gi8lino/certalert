@@ -36,3 +36,4 @@ certalert:
     critical-threshold: 3d
     warning-threshold: 20d
     date-format: "yyyy-MM-dd HH:mm:ss"
+    zone-id: UTC

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 import java.time.Duration;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -17,7 +18,8 @@ class CertificateConfigTest {
         .withMessage("checkInterval must be positive");
     assertThatIllegalArgumentException()
         .isThrownBy(
-            () -> new CertificateConfig.Dashboard(Duration.ofDays(3), Duration.ofDays(4), null))
+            () ->
+                new CertificateConfig.Dashboard(Duration.ofDays(3), Duration.ofDays(4), null, null))
         .withMessage("criticalThreshold must not be greater than warningThreshold");
   }
 
@@ -31,5 +33,6 @@ class CertificateConfigTest {
         new CertificateConfig.CertificateEntry("gateway", "/gateway.pem", "pem", null));
 
     assertThat(config.certificates()).isEmpty();
+    assertThat(config.dashboard().zoneId()).isEqualTo(ZoneId.of("UTC"));
   }
 }

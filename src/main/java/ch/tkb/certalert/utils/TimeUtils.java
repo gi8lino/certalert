@@ -39,12 +39,17 @@ public final class TimeUtils {
    * @return formatted string or null if end is before start or any Instant is null
    */
   public static String formatPeriod(Instant start, Instant end, boolean longFormat) {
+    return formatPeriod(start, end, longFormat, ZoneId.systemDefault());
+  }
+
+  /** Formats the difference between two instants using the supplied calendar time zone. */
+  public static String formatPeriod(Instant start, Instant end, boolean longFormat, ZoneId zoneId) {
     if (start == null || end == null || end.isBefore(start)) {
       return null;
     }
 
-    LocalDateTime from = LocalDateTime.ofInstant(start, ZoneId.systemDefault());
-    LocalDateTime to = LocalDateTime.ofInstant(end, ZoneId.systemDefault());
+    LocalDateTime from = LocalDateTime.ofInstant(start, zoneId);
+    LocalDateTime to = LocalDateTime.ofInstant(end, zoneId);
 
     Period datePart = Period.between(from.toLocalDate(), to.toLocalDate());
     LocalDateTime afterDate = from.plus(datePart);

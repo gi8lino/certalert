@@ -12,7 +12,6 @@ import java.io.File;
 import java.security.KeyStore;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,9 +32,8 @@ public class CertificateCollector {
   /** Logger for collection activity and errors. */
   private static final Logger log = LoggerFactory.getLogger(CertificateCollector.class);
 
-  /** Formatter used to log certificate expiry timestamps. */
-  private static final DateTimeFormatter formatter =
-      DateTimeFormatter.ISO_OFFSET_DATE_TIME.withZone(ZoneId.systemDefault());
+  /** Formatter used to log certificate expiry timestamps in the configured time zone. */
+  private final DateTimeFormatter formatter;
 
   /** Source configuration for certificate collection. */
   private final CertificateConfig config;
@@ -55,6 +53,7 @@ public class CertificateCollector {
       CertificateConfig config, CertificateMetricsPublisher metricsPublisher) {
     this.config = config;
     this.metricsPublisher = metricsPublisher;
+    this.formatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME.withZone(config.dashboard().zoneId());
     log.info("Initialized; monitoring {} certificates", config.certificates().size());
   }
 

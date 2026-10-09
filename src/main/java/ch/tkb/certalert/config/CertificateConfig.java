@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import java.time.Duration;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import org.slf4j.Logger;
@@ -23,7 +24,7 @@ public record CertificateConfig(
   /** Initializes defaults for checkInterval, dashboard, and certificates if null. */
   public CertificateConfig {
     checkInterval = checkInterval != null ? checkInterval : Duration.ofMinutes(10);
-    dashboard = dashboard != null ? dashboard : new Dashboard(null, null, null);
+    dashboard = dashboard != null ? dashboard : new Dashboard(null, null, null, null);
     certificates = certificates != null ? List.copyOf(certificates) : List.of();
     if (checkInterval.isZero() || checkInterval.isNegative()) {
       throw new IllegalArgumentException("checkInterval must be positive");
@@ -34,13 +35,15 @@ public record CertificateConfig(
   public record Dashboard(
       @Positive Duration warningThreshold, // Warn if certificate expires within this duration
       @Positive Duration criticalThreshold, // Critical if certificate expires within this duration
-      String dateFormat // Date/time format pattern for display
+      String dateFormat, // Date/time format pattern for display
+      ZoneId zoneId // Time zone used for dates, logs, and dashboard durations
       ) {
 
     // Default values for dashboard settings
     public static final String DEFAULT_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ssXXX";
     public static final Duration DEFAULT_WARNING_THRESHOLD = Duration.ofDays(20);
     public static final Duration DEFAULT_CRITICAL_THRESHOLD = Duration.ofDays(3);
+    public static final ZoneId DEFAULT_ZONE_ID = ZoneId.of("UTC");
     private static final Logger log = LoggerFactory.getLogger(Dashboard.class);
 
     /** Initializes defaults and validates the dateFormat pattern. */
@@ -48,6 +51,7 @@ public record CertificateConfig(
       warningThreshold = warningThreshold != null ? warningThreshold : DEFAULT_WARNING_THRESHOLD;
       criticalThreshold =
           criticalThreshold != null ? criticalThreshold : DEFAULT_CRITICAL_THRESHOLD;
+      zoneId = zoneId != null ? zoneId : DEFAULT_ZONE_ID;
       validateThresholds(warningThreshold, criticalThreshold);
 
       if (!isValidDateFormat(dateFormat)) {
