@@ -186,7 +186,7 @@ public class CertificateCollector {
       String path, String type, String name, String alias, X509Certificate cert) {
     Instant nb = cert.getNotBefore().toInstant();
     Instant na = cert.getNotAfter().toInstant();
-    Status status = Instant.now().isAfter(na) ? Status.EXPIRED : Status.VALID;
+    Status status = determineStatus(Instant.now(), nb, na);
     File f = new File(path);
     String fileName = f.getName();
 
@@ -201,6 +201,14 @@ public class CertificateCollector {
         .notAfter(na)
         .status(status)
         .build();
+  }
+
+  /** Determines whether a certificate is valid, not yet valid, or expired at the given instant. */
+  static Status determineStatus(Instant currentTime, Instant notBefore, Instant notAfter) {
+    if (currentTime.isBefore(notBefore)) {
+      return Status.INVALID;
+    }
+    return currentTime.isBefore(notAfter) ? Status.VALID : Status.EXPIRED;
   }
 
   /** Extracts X509 info from a keystore alias. */
