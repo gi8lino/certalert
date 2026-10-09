@@ -104,13 +104,13 @@ public class CertificateMetricsPublisher {
   /** Publishes or updates the validity metric for a given certificate. */
   private void publishValidity(CertificateInfo certInfo) {
     CertificateIdentity key = CertificateIdentity.from(certInfo);
-    double status = certInfo.getStatus() == CertificateInfo.Status.VALID ? 0 : 1;
+    double validityValue = certInfo.getStatus() == CertificateInfo.Status.VALID ? 0 : 1;
 
     certValidityMetrics
         .computeIfAbsent(
             key,
             metricKey -> {
-              AtomicDouble holder = new AtomicDouble(status);
+              AtomicDouble holder = new AtomicDouble(validityValue);
               Gauge gauge =
                   Gauge.builder("certalert_certificate_validity", holder, AtomicDouble::get)
                       .description("Indicates if a certificate is valid (0 = valid, 1 = invalid)")
@@ -123,7 +123,7 @@ public class CertificateMetricsPublisher {
               return new MetricState(holder, gauge);
             })
         .holder()
-        .set(status);
+        .set(validityValue);
   }
 
   /** Removes metrics that do not belong to certificates observed during this collection cycle. */

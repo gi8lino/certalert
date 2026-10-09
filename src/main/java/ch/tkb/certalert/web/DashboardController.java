@@ -101,8 +101,8 @@ public class DashboardController {
   }
 
   /** Formats an Instant or returns a placeholder if null. */
-  private String formatInstant(Instant ts, String placeholder) {
-    return ts != null ? formatter.format(ts) : placeholder;
+  private String formatInstant(Instant instant, String placeholder) {
+    return instant != null ? formatter.format(instant) : placeholder;
   }
 
   /** Formats the remaining time until an expiration Instant. */

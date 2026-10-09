@@ -60,11 +60,12 @@ public class CertificateCollector {
   /** Scheduled polling method that replaces the certificate snapshot and reconciles its metrics. */
   @Scheduled(fixedDelayString = "${certalert.check-interval}")
   public void collectCertificateData() {
-    Map<CertificateIdentity, CertificateInfo> existing = indexByIdentity(certificateInfos.get());
+    Map<CertificateIdentity, CertificateInfo> existingCertificates =
+        indexByIdentity(certificateInfos.get());
     List<CertificateInfo> collected = new ArrayList<>();
 
     for (var entry : config.certificates()) {
-      collected.addAll(collectEntry(entry, existing));
+      collected.addAll(collectEntry(entry, existingCertificates));
     }
 
     List<CertificateInfo> snapshot = List.copyOf(collected);
@@ -98,8 +99,9 @@ public class CertificateCollector {
     List<CertificateInfo> collected = new ArrayList<>();
     for (int index = 0; index < certificates.size(); index++) {
       String alias = certificates.size() == 1 ? "default" : "cert" + (index + 1);
-      collected.add(
-          processInfo(buildInfoFromCert(entry, alias, certificates.get(index)), existing));
+      X509Certificate certificate = certificates.get(index);
+      CertificateInfo info = buildInfoFromCert(entry, alias, certificate);
+      collected.add(processInfo(info, existing));
     }
     return collected;
   }
@@ -143,15 +145,15 @@ public class CertificateCollector {
   /** Publishes and logs changes for a collected certificate. */
   private CertificateInfo processInfo(
       CertificateInfo newInfo, Map<CertificateIdentity, CertificateInfo> existing) {
-    CertificateInfo oldInfo = existing.get(CertificateIdentity.from(newInfo));
+    CertificateInfo previousInfo = existing.get(CertificateIdentity.from(newInfo));
 
-    if (oldInfo != null) {
-      if (!newInfo.equals(oldInfo)) {
+    if (previousInfo != null) {
+      if (!newInfo.equals(previousInfo)) {
         log.info(
             "Certificate {}:{} changed {} → {}",
             newInfo.getName(),
             newInfo.getAlias(),
-            oldInfo.getStatus(),
+            previousInfo.getStatus(),
             newInfo.getStatus());
       }
       return newInfo;
@@ -183,11 +185,10 @@ public class CertificateCollector {
   /** Extracts X509 info from a single certificate. */
   private CertificateInfo buildInfoFromCert(
       String path, String type, String name, String alias, X509Certificate cert) {
-    Instant nb = cert.getNotBefore().toInstant();
-    Instant na = cert.getNotAfter().toInstant();
-    Status status = determineStatus(Instant.now(), nb, na);
-    File f = new File(path);
-    String fileName = f.getName();
+    Instant notBefore = cert.getNotBefore().toInstant();
+    Instant notAfter = cert.getNotAfter().toInstant();
+    Status status = determineStatus(Instant.now(), notBefore, notAfter);
+    String fileName = new File(path).getName();
 
     return CertificateInfo.builder()
         .path(path)
@@ -196,8 +197,8 @@ public class CertificateCollector {
         .type(type)
         .alias(alias)
         .subject(cert.getSubjectX500Principal().getName())
-        .notBefore(nb)
-        .notAfter(na)
+        .notBefore(notBefore)
+        .notAfter(notAfter)
         .status(status)
         .build();
   }
