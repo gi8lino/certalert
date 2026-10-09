@@ -13,6 +13,7 @@ repositories {
 }
 
 tasks.named('processResources') {
+    inputs.property('appVersion', appVersion)
     filesMatching('application*.yml') {
         filter(org.apache.tools.ant.filters.ReplaceTokens, tokens: [appVersion: appVersion])
     }
