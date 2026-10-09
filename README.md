@@ -80,6 +80,31 @@ gateway_password = replace-me
 
 Password-file updates are used on the next poll after Kubernetes projects the updated Secret. Other supported sources are `env:`, `json:`, `yaml:`, `ini:`, `properties:`, and `toml:`.
 
+For structured password files, use a dot-separated key path after `//`:
+
+```yaml
+# passwords.yaml
+gateway:
+  password: replace-me
+```
+
+`yaml:/passwords/passwords.yaml//gateway.password`
+
+```toml
+# passwords.toml
+[gateway]
+password = "replace-me"
+```
+
+`toml:/passwords/passwords.toml//gateway.password`
+
+```properties
+# passwords.properties
+gateway.password=replace-me
+```
+
+`properties:/passwords/passwords.properties//gateway.password`
+
 ## Certificate states and alerts
 
 CertAlert builds a new certificate snapshot on every polling interval.
