@@ -6,12 +6,12 @@ WORKDIR /app
 COPY build/libs/certalert*.jar certalert.jar
 
 # Create runtime dirs (for mounted secrets, configs, etc.)
-RUN addgroup --system certalert \
- && adduser --system certalert --ingroup certalert \
+RUN addgroup --system --gid 10001 certalert \
+ && adduser --system --uid 10001 --ingroup certalert certalert \
  && mkdir -p /config /passwords /certs \
  && chown certalert:certalert /config /passwords /certs
 
-USER certalert
+USER 10001:10001
 
 EXPOSE 8080
 

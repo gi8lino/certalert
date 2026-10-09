@@ -12,12 +12,39 @@ spec:
       labels:
         app: certalert
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: certalert
           image: ghcr.io/thurgauerkb/certalert:latest
           ports:
             - name: http
               containerPort: 8080
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            failureThreshold: 12
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 20
           volumeMounts:
             - name: config
               mountPath: /config
@@ -25,7 +52,15 @@ spec:
               mountPath: /passwords
             - name: certs
               mountPath: /certs
-          resources: { }
+            - name: tmp
+              mountPath: /tmp
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
       volumes:
         - name: config
           configMap:
@@ -36,3 +71,5 @@ spec:
         - name: passwords-file
           secret:
             secretName: password-file
+        - name: tmp
+          emptyDir: {}

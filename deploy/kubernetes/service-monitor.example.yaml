@@ -1,0 +1,17 @@
+---
+# Requires the Prometheus Operator CRDs. Adjust metadata.labels to match the
+# Prometheus instance that should select this ServiceMonitor.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: certalert
+  labels:
+    app: certalert
+spec:
+  selector:
+    matchLabels:
+      app: certalert
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
