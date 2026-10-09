@@ -112,7 +112,7 @@ CertAlert builds a new certificate snapshot on every polling interval.
 - An expired but readable certificate remains `EXPIRED`, has validity metric value `1`, and remains visible in the dashboard.
 - A renewed certificate updates its expiry and remaining-days metrics on the next scan.
 - A removed configuration entry has its metrics removed on the next scan. Prometheus alerts based on those metrics resolve after the next scrape and rule evaluation; resolved notifications depend on Alertmanager receiver settings.
-- A missing file, bad password, unreadable keystore, or certificate outside its validity period is `INVALID`.
+- A certificate can be `EXPIRED`, `NOT_YET_VALID`, `MISSING_CERTIFICATE`, or `LOAD_FAILED`; the latter three use the dashboard error state.
 
 The example [PrometheusRule](deploy/kubernetes/prometheus-rules.example.yaml) contains warning, urgent-expiry, expired, and invalid-certificate alerts.
 

@@ -4,7 +4,7 @@ import ch.tkb.certalert.model.CertificateInfo;
 
 /** View model for rendering certificate data in the dashboard. */
 public record CertificateView(
-    CertificateInfo.Status status, // Status (VALID, EXPIRED, INVALID)
+    CertificateInfo.Status status, // Collection state for the certificate
     String name, // Certificate name
     String path, // Path to certificate file
     String fileName, // File name
@@ -18,6 +18,10 @@ public record CertificateView(
     ) {
   /** Return the name of the fragment to render for the certificate status. */
   public String getStatusFragmentName() {
-    return "cert-" + status.name().toLowerCase() + "-icon";
+    return switch (status) {
+      case VALID -> "cert-valid-icon";
+      case EXPIRED -> "cert-expired-icon";
+      default -> "cert-invalid-icon";
+    };
   }
 }

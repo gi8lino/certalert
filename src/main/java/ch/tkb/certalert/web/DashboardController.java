@@ -82,9 +82,9 @@ public class DashboardController {
 
     // Determine CSS class using dashboard thresholds
     String statusClass =
-        info.getStatus() == CertificateInfo.Status.INVALID
-            ? "status-error"
-            : determineStatusClass(notAfter, now);
+        info.getStatus() == CertificateInfo.Status.VALID
+            ? determineStatusClass(notAfter, now)
+            : statusClassForNonValidCertificate(info.getStatus());
 
     return new CertificateView(
         info.getStatus(),
@@ -130,5 +130,10 @@ public class DashboardController {
       return "status-warn";
     }
     return "status-ok";
+  }
+
+  /** Maps non-valid certificate states to their dashboard severity class. */
+  private String statusClassForNonValidCertificate(CertificateInfo.Status status) {
+    return status == CertificateInfo.Status.EXPIRED ? "status-crit" : "status-error";
   }
 }

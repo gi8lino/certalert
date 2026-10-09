@@ -41,7 +41,11 @@ public class CertificateInfo {
     VALID,
     /** Certificate has passed its expiry date. */
     EXPIRED,
-    /** Certificate could not be loaded or is otherwise invalid. */
-    INVALID
+    /** Certificate validity starts in the future. */
+    NOT_YET_VALID,
+    /** The configured alias does not contain a certificate. */
+    MISSING_CERTIFICATE,
+    /** Certificate data or its containing keystore could not be loaded. */
+    LOAD_FAILED
   }
 }

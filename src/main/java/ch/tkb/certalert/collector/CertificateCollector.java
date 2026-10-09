@@ -205,7 +205,7 @@ public class CertificateCollector {
   /** Determines whether a certificate is valid, not yet valid, or expired at the given instant. */
   static Status determineStatus(Instant currentTime, Instant notBefore, Instant notAfter) {
     if (currentTime.isBefore(notBefore)) {
-      return Status.INVALID;
+      return Status.NOT_YET_VALID;
     }
     return currentTime.isBefore(notAfter) ? Status.VALID : Status.EXPIRED;
   }
@@ -223,7 +223,7 @@ public class CertificateCollector {
           .subject("certificate is missing")
           .notBefore(null)
           .notAfter(null)
-          .status(Status.INVALID)
+          .status(Status.MISSING_CERTIFICATE)
           .build();
     }
     return buildInfoFromCert(path, type, name, alias, cert);
@@ -253,7 +253,7 @@ public class CertificateCollector {
             .type(type)
             .alias(alias)
             .subject(describe(e))
-            .status(Status.INVALID)
+            .status(Status.LOAD_FAILED)
             .build();
     CertificateInfo oldInfo = existing.get(new CertificateIdentity(path, type, name, alias));
     if (oldInfo != null) {

@@ -14,7 +14,7 @@ class CertificateCollectorTest {
     Instant notAfter = Instant.parse("2030-12-31T23:59:59Z");
 
     assertThat(CertificateCollector.determineStatus(notBefore.minusSeconds(1), notBefore, notAfter))
-        .isEqualTo(Status.INVALID);
+        .isEqualTo(Status.NOT_YET_VALID);
     assertThat(CertificateCollector.determineStatus(notBefore, notBefore, notAfter))
         .isEqualTo(Status.VALID);
     assertThat(CertificateCollector.determineStatus(notAfter, notBefore, notAfter))
