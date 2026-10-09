@@ -29,11 +29,20 @@ spec:
             summary: Certificate expires within three days
             description: Certificate {{ $labels.certificate_name }} (alias {{ $labels.alias }}) expires in {{ $value | printf "%.1f" }} days.
 
-        - alert: CertificateInvalid
-          expr: certalert_certificate_validity == 1
+        - alert: CertificateExpired
+          expr: certalert_certificate_validity == 1 and certalert_certificate_expiration_seconds <= time()
           for: 5m
           labels:
             severity: critical
           annotations:
-            summary: Certificate is invalid or expired
-            description: Certificate {{ $labels.certificate_name }} (alias {{ $labels.alias }}) is invalid or expired.
+            summary: Certificate has expired
+            description: Certificate {{ $labels.certificate_name }} (alias {{ $labels.alias }}) has expired.
+
+        - alert: CertificateInvalid
+          expr: certalert_certificate_validity == 1 unless certalert_certificate_expiration_seconds <= time()
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: Certificate cannot be validated
+            description: Certificate {{ $labels.certificate_name }} (alias {{ $labels.alias }}) could not be loaded or is outside its validity period.
