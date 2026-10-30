@@ -98,4 +98,20 @@ class TimeUtilsTest {
     assertTrue(result.contains("3h"), "Should contain '3h'");
     assertTrue(result.contains("15m"), "Should contain '15m'");
   }
+
+  @Test
+  @DisplayName("formatPeriod borrows a day across midnight and a month boundary")
+  void formatPeriod_overnightMonthBoundary() {
+    Instant start = Instant.parse("2026-10-29T23:15:00Z");
+    Instant end = Instant.parse("2026-11-01T02:30:00Z");
+    assertEquals("2d, 3h, 15m", TimeUtils.formatPeriod(start, end, false, ZoneId.of("UTC")));
+  }
+
+  @Test
+  @DisplayName("formatPeriod borrows a day across an overnight year boundary")
+  void formatPeriod_overnightYearBoundary() {
+    Instant start = Instant.parse("2026-12-31T23:15:00Z");
+    Instant end = Instant.parse("2027-01-01T02:30:00Z");
+    assertEquals("3h, 15m", TimeUtils.formatPeriod(start, end, false, ZoneId.of("UTC")));
+  }
 }

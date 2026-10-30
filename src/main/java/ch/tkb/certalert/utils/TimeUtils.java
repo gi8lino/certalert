@@ -53,6 +53,10 @@ public final class TimeUtils {
 
     Period datePart = Period.between(from.toLocalDate(), to.toLocalDate());
     LocalDateTime afterDate = from.plus(datePart);
+    if (afterDate.isAfter(to)) {
+      datePart = Period.between(from.toLocalDate(), to.toLocalDate().minusDays(1));
+      afterDate = from.plus(datePart);
+    }
 
     Duration timePart = Duration.between(afterDate, to);
 
