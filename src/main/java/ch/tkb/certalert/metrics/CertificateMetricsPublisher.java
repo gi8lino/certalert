@@ -147,14 +147,13 @@ public class CertificateMetricsPublisher {
       Set<CertificateIdentity> activeKeys) {
     metricStates
         .entrySet()
-        .removeIf(
-            entry -> {
-              if (activeKeys.contains(entry.getKey())) {
-                return false;
-              }
-              meterRegistry.remove(entry.getValue().gauge());
-              return true;
-            });
+        .removeIf(entry -> {
+          if (activeKeys.contains(entry.getKey())) {
+            return false;
+          }
+          meterRegistry.remove(entry.getValue().gauge());
+          return true;
+        });
   }
 
   /** Holds the mutable value and registered gauge for one certificate metric. */

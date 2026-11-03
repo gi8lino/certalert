@@ -17,9 +17,8 @@ class CertificateConfigTest {
         .isThrownBy(() -> new CertificateConfig(Duration.ZERO, List.of(), null))
         .withMessage("checkInterval must be positive");
     assertThatIllegalArgumentException()
-        .isThrownBy(
-            () ->
-                new CertificateConfig.Dashboard(Duration.ofDays(3), Duration.ofDays(4), null, null))
+        .isThrownBy(() ->
+            new CertificateConfig.Dashboard(Duration.ofDays(3), Duration.ofDays(4), null, null))
         .withMessage("criticalThreshold must not be greater than warningThreshold");
   }
 
