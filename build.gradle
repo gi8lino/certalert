@@ -1,7 +1,7 @@
 plugins {
     id 'java'
     id 'idea'
-    id 'org.springframework.boot' version '4.1.2'
+    id 'org.springframework.boot' version '4.2.0'
     id 'io.spring.dependency-management' version '1.1.7'
     id 'com.diffplug.spotless' version '8.11.0'
 }
@@ -22,11 +22,11 @@ tasks.named('processResources') {
 group = 'ch.tkb.certalert'
 
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter:4.1.2'
-    implementation 'org.springframework.boot:spring-boot-starter-actuator:4.1.2'
-    implementation 'org.springframework.boot:spring-boot-starter-web:4.1.2'
-    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf:4.1.2'
-    implementation 'org.springframework.boot:spring-boot-starter-validation:4.1.2'
+    implementation 'org.springframework.boot:spring-boot-starter:4.2.0'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator:4.2.0'
+    implementation 'org.springframework.boot:spring-boot-starter-web:4.2.0'
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf:4.2.0'
+    implementation 'org.springframework.boot:spring-boot-starter-validation:4.2.0'
 
     compileOnly 'org.projectlombok:lombok:1.18.48'
     annotationProcessor 'org.projectlombok:lombok:1.18.48'
@@ -38,7 +38,7 @@ dependencies {
     implementation 'org.ini4j:ini4j:0.5.4'
     implementation 'org.tomlj:tomlj:2.2.0'
 
-    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor:4.1.2'
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor:4.2.0'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
